@@ -1,13 +1,8 @@
-﻿const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 
-const authMiddleware = (
-  req,
-  res,
-  next
-) => {
+const authMiddleware = (req, res, next) => {
   try {
-    const authHeader =
-      req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
     if (!authHeader) {
       return res.status(401).json({
@@ -16,8 +11,7 @@ const authMiddleware = (
       });
     }
 
-    const token =
-      authHeader.split(" ")[1];
+    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(
       token,
@@ -26,18 +20,11 @@ const authMiddleware = (
 
     req.user = decoded;
 
-    if (!req.user || !req.user.userId) {
-      return res.status(401).json({
-        success: false,
-        error: "Token invalido: falta userId",
-      });
-    }
-
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      error: "Token invalido",
+      error: "Token inválido",
     });
   }
 };

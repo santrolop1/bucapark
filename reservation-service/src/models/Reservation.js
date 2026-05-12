@@ -11,6 +11,14 @@ const reservationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: [true, 'El ID del parque es requerido'],
     },
+    
+    espacio: {
+  type: String,
+  required: [
+    true,
+    'El espacio es requerido',
+  ],
+},
 
     fecha: {
       type: Date,
@@ -29,11 +37,16 @@ const reservationSchema = new mongoose.Schema(
       match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)'],
     },
 
-    estado: {
-      type: String,
-      enum: ['Pendiente', 'Aprobada', 'Rechazada'],
-      default: 'Pendiente',
-    },
+   estado: {
+  type: String,
+  enum: [
+    'Pendiente',
+    'Aprobada',
+    'Rechazada',
+    'Cancelada',
+  ],
+  default: 'Pendiente',
+},
 
     motivo: {
       type: String,
@@ -59,4 +72,4 @@ const reservationSchema = new mongoose.Schema(
 // Índice para detección rápida de cruces de horario
 reservationSchema.index({ parkId: 1, fecha: 1, horaInicio: 1, horaFin: 1 });
 
-module.exports = mongoose.model('Reservation', reservationSchema);
+module.exports = mongoose.model('Reservation', reservationSchema, 'reservas');

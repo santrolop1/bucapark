@@ -35,4 +35,4 @@ const parkSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Park", parkSchema);
+module.exports = mongoose.model("Park", parkSchema, "parques");

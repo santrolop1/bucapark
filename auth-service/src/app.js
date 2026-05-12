@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
 const dns = require("dns");
 dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
@@ -12,24 +12,59 @@ const connectDatabase = require("./config/database");
 const authRoutes = require("./routes/auth");
 
 const app = express();
+
 const PORT = process.env.PORT || 3001;
 
+/*
+|--------------------------------------------------------------------------
+| Verificar variables de entorno
+|--------------------------------------------------------------------------
+*/
+
 const requiredEnv = ["MONGO_URI", "JWT_SECRET"];
-const missingEnv = requiredEnv.filter((envVar) => !process.env[envVar]);
+
+const missingEnv = requiredEnv.filter(
+  (envVar) => !process.env[envVar]
+);
 
 if (missingEnv.length > 0) {
-  console.error("[ERROR] Faltan variables en .env: " + missingEnv.join(", "));
+  console.error(
+    `[ERROR] Faltan variables en .env: ${missingEnv.join(", ")}`
+  );
+
   process.exit(1);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Middlewares
+|--------------------------------------------------------------------------
+*/
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+/*
+|--------------------------------------------------------------------------
+| Routes
+|--------------------------------------------------------------------------
+*/
+
 app.use("/api/auth", authRoutes);
 
+/*
+|--------------------------------------------------------------------------
+| Health Check
+|--------------------------------------------------------------------------
+*/
+
 app.get("/health", (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+  const dbStatus =
+    mongoose.connection.readyState === 1
+      ? "connected"
+      : "disconnected";
+
   res.status(200).json({
     service: "auth-service",
     status: "OK",
@@ -38,6 +73,12 @@ app.get("/health", (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| 404 Handler
+|--------------------------------------------------------------------------
+*/
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -45,11 +86,23 @@ app.use((req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Inicializar servidor
+|--------------------------------------------------------------------------
+*/
+
 const startServer = async () => {
   await connectDatabase();
+
   app.listen(PORT, () => {
-    console.log("[INFO] Auth Service iniciado en puerto " + PORT);
-    console.log("[INFO] Health check: http://localhost:" + PORT + "/health");
+    console.log(
+      `[OK] Auth Service corriendo en http://localhost:${PORT}`
+    );
+
+    console.log(
+      `[OK] Health check: http://localhost:${PORT}/health`
+    );
   });
 };
 
