@@ -1,23 +1,26 @@
 # render.yaml — BucaPark Blueprint
 #
-# DEPLOY:
-#   1. render.com → New → Blueprint Instance → conectar repo → Deploy
-#   2. Render pedirá los env vars marcados sync:false. Usar:
-#        MONGO_URI  = mongodb+srv://bucapark_admin:Bucapark2024@bucapark-cluster.1mnrvag.mongodb.net/bucapark_db?retryWrites=true&w=majority&appName=bucapark-cluster
-#        JWT_SECRET = /hz+NIveNxZgIsZ4mkQ0+SEFnrCoGDJIlhh5F/mlFG4=
-#   3. Al terminar el deploy, copiar la URL de buca-gateway (ej: buca-gateway.onrender.com)
-#   4. Vercel → Settings → Environment Variables:
-#        VITE_API_BASE_URL = https://buca-gateway.onrender.com
+# IMPORTANTE: Los nombres usan el sufijo -vm9o que Render asignó al crear
+# este Blueprint. fromService: property: host resuelve {name}.onrender.com
+# usando el nombre del YAML — por eso los nombres DEBEN incluir el sufijo.
 #
-# fromService con property: host inyecta el hostname público del servicio
-# (ej: "buca-events.onrender.com"). El gateway lo recibe como *_SERVICE_HOST
-# y construye https://{host} internamente.
+# Si en el futuro se necesita re-crear el Blueprint desde cero (nuevo sufijo),
+# solo hay que reemplazar todos los "-vm9o" por el nuevo sufijo.
+#
+# DESPUÉS DEL DEPLOY:
+#   1. Copiar la URL de buca-gateway-vm9o (ej: buca-gateway-vm9o.onrender.com)
+#   2. Vercel Dashboard → Settings → Environment Variables:
+#        VITE_API_BASE_URL = https://buca-gateway-vm9o.onrender.com
+#
+# ENV VARS SECRETAS requeridas en cada servicio (sync:false → se ingresan en dashboard):
+#   MONGO_URI  = mongodb+srv://bucapark_admin:Bucapark2024@bucapark-cluster.1mnrvag.mongodb.net/bucapark_db?retryWrites=true&w=majority&appName=bucapark-cluster
+#   JWT_SECRET = /hz+NIveNxZgIsZ4mkQ0+SEFnrCoGDJIlhh5F/mlFG4=
 
 services:
 
   # ── auth-service ─────────────────────────────────────────────────────────────
   - type: web
-    name: buca-auth
+    name: buca-auth-vm9o
     env: node
     plan: free
     rootDir: auth-service
@@ -34,7 +37,7 @@ services:
 
   # ── parks-service ────────────────────────────────────────────────────────────
   - type: web
-    name: buca-parks
+    name: buca-parks-vm9o
     env: node
     plan: free
     rootDir: parks-service
@@ -51,7 +54,7 @@ services:
 
   # ── reservation-service ──────────────────────────────────────────────────────
   - type: web
-    name: buca-reservations
+    name: buca-reservations-vm9o
     env: node
     plan: free
     rootDir: reservation-service
@@ -68,7 +71,7 @@ services:
 
   # ── events-service ───────────────────────────────────────────────────────────
   - type: web
-    name: buca-events
+    name: buca-events-vm9o
     env: node
     plan: free
     rootDir: events-service
@@ -85,7 +88,7 @@ services:
 
   # ── incidents-service ────────────────────────────────────────────────────────
   - type: web
-    name: buca-incidents
+    name: buca-incidents-vm9o
     env: node
     plan: free
     rootDir: incidents-service
@@ -102,7 +105,7 @@ services:
 
   # ── maintenance-service ──────────────────────────────────────────────────────
   - type: web
-    name: buca-maintenance
+    name: buca-maintenance-vm9o
     env: node
     plan: free
     rootDir: maintenance-service
@@ -119,7 +122,7 @@ services:
 
   # ── inventory-service ────────────────────────────────────────────────────────
   - type: web
-    name: buca-inventory
+    name: buca-inventory-vm9o
     env: node
     plan: free
     rootDir: inventory-service
@@ -135,10 +138,10 @@ services:
         sync: false
 
   # ── gateway ──────────────────────────────────────────────────────────────────
-  # fromService property: host → inyecta el hostname público de cada servicio
-  # El gateway reconstruye https://{host} usando la función svcUrl()
+  # fromService: property: host → resuelve {name}.onrender.com
+  # Con los nombres -vm9o, host devuelve buca-parks-vm9o.onrender.com ✓
   - type: web
-    name: buca-gateway
+    name: buca-gateway-vm9o
     env: node
     plan: free
     rootDir: gateway
@@ -153,35 +156,35 @@ services:
       - key: AUTH_SERVICE_HOST
         fromService:
           type: web
-          name: buca-auth
+          name: buca-auth-vm9o
           property: host
       - key: PARKS_SERVICE_HOST
         fromService:
           type: web
-          name: buca-parks
+          name: buca-parks-vm9o
           property: host
       - key: RESERVATION_SERVICE_HOST
         fromService:
           type: web
-          name: buca-reservations
+          name: buca-reservations-vm9o
           property: host
       - key: EVENTS_SERVICE_HOST
         fromService:
           type: web
-          name: buca-events
+          name: buca-events-vm9o
           property: host
       - key: INCIDENTS_SERVICE_HOST
         fromService:
           type: web
-          name: buca-incidents
+          name: buca-incidents-vm9o
           property: host
       - key: MAINTENANCE_SERVICE_HOST
         fromService:
           type: web
-          name: buca-maintenance
+          name: buca-maintenance-vm9o
           property: host
       - key: INVENTORY_SERVICE_HOST
         fromService:
           type: web
-          name: buca-inventory
+          name: buca-inventory-vm9o
           property: host
