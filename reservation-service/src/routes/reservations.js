@@ -51,6 +51,7 @@ router.get(
 router.get(
   "/",
   authMiddleware,
+  requireRole("admin", "operario"),
   getReservations
 );
 

@@ -474,10 +474,10 @@ export default function EventsPage() {
     loadEvents();
   }, [loadEvents]);
 
-  // Usa eventos reales si la API respondió (aunque sean 0); mock como fallback
+  // Usa eventos reales si la API respondió; fallback al mock SOLO si falla la API (null).
+  // Cuando la API responde vacío (apiEvents.length === 0) se muestra estado vacío real, no datos falsos.
   const activeEvents = useMemo(() => {
     if (apiEvents === null) return EVENTS;
-    if (apiEvents.length === 0) return EVENTS;
     return apiEvents.map(mapApiEvent);
   }, [apiEvents]);
 
@@ -497,11 +497,33 @@ export default function EventsPage() {
       result = result.filter((e) => e?.categoria === activeCategory);
     }
 
-    // Filtro por tiempo
+    // Filtro por tiempo — usa fechaCompleta para eventos reales; fecha (label) para mocks
     if (activeFilter === 'today') {
-      result = result.filter((e) => e?.fecha === 'Hoy');
+      const todayStr = new Date().toDateString();
+      result = result.filter((e) => {
+        if (e?.fechaCompleta) return new Date(e.fechaCompleta).toDateString() === todayStr;
+        return e?.fecha === 'Hoy';
+      });
     } else if (activeFilter === 'week') {
-      result = result.filter((e) => ['Hoy', 'Mañana', 'Vie 19', 'Sáb 20', 'Dom 21'].includes(e?.fecha));
+      const now = new Date();
+      const weekLater = new Date(now);
+      weekLater.setDate(weekLater.getDate() + 7);
+      result = result.filter((e) => {
+        if (e?.fechaCompleta) {
+          const d = new Date(e.fechaCompleta);
+          return d >= now && d <= weekLater;
+        }
+        return ['Hoy', 'Mañana'].includes(e?.fecha);
+      });
+    } else if (activeFilter === 'month') {
+      const now = new Date();
+      result = result.filter((e) => {
+        if (e?.fechaCompleta) {
+          const d = new Date(e.fechaCompleta);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        }
+        return true;
+      });
     }
 
     // Búsqueda
@@ -516,7 +538,9 @@ export default function EventsPage() {
     }
 
     return result;
-  }, [activeCategory, activeFilter, searchQuery]);
+  // activeEvents DEBE estar en el array de deps — si no, es stale closure
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEvents, activeCategory, activeFilter, searchQuery]);
 
   // Toggle like
   const toggleLike = (id) => {

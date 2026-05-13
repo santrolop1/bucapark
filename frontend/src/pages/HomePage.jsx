@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { MapPin, ArrowRight, Wind, Trees, Mountain, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react';
-import { parkService, eventService, reservationService } from '../api/services';
+import { parkService, eventService } from '../api/services';
 
 // ─── Textos y datos editables ─────────────────────────────────────────────────
 // Para cambiar cualquier texto visible, editá solo estos objetos.
@@ -95,13 +95,6 @@ const getListPayload = (response) => {
   return Array.isArray(list) ? list : [];
 };
 
-const parseHourToMinutes = (hhmm) => {
-  if (typeof hhmm !== 'string') return null;
-  const [hh, mm] = hhmm.split(':').map(Number);
-  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-  return (hh * 60) + mm;
-};
-
 // ─── Componente ───────────────────────────────────────────────────────────────
 const HomePage = () => {
   const [parks, setParks] = useState([]);
@@ -112,8 +105,6 @@ const HomePage = () => {
     activeParks: null,
     totalParks: null,
     totalEvents: null,
-    reservationsThisMonth: null,
-    averageReservationMinutes: null,
   });
   const containerRef = useRef(null);
 
@@ -132,12 +123,9 @@ const HomePage = () => {
     },
     {
       ...STATS[1],
-      value: Number.isFinite(statsData.reservationsThisMonth) ? statsData.reservationsThisMonth : STATS[1].value,
+      value: Number.isFinite(statsData.totalEvents) ? statsData.totalEvents : STATS[1].value,
     },
-    {
-      ...STATS[2],
-      value: Number.isFinite(statsData.averageReservationMinutes) ? statsData.averageReservationMinutes : STATS[2].value,
-    },
+    STATS[2],
   ];
 
   // Un hook por stat — los hooks no pueden ir en loops
@@ -169,50 +157,18 @@ const HomePage = () => {
   }, []);
 
   const fetchPublicStats = useCallback(() => {
-    Promise.all([
-      eventService.getPublic(),
-      reservationService.getAll(),
-    ])
-      .then(([eventsRes, reservationsRes]) => {
+    // Solo events/public — endpoint público, no requiere auth.
+    // reservationService.getAll() requiere auth y causaría redirect a /login en visitantes anónimos.
+    eventService.getPublic()
+      .then((eventsRes) => {
         const events = getListPayload(eventsRes);
-        const reservations = getListPayload(reservationsRes);
-
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const reservationsThisMonth = reservations.filter((reservation) => {
-          const date = new Date(reservation?.fecha);
-          return date.getFullYear() === currentYear && date.getMonth() === currentMonth;
-        });
-
-        const durations = reservationsThisMonth
-          .map((reservation) => {
-            const start = parseHourToMinutes(reservation?.horaInicio);
-            const end = parseHourToMinutes(reservation?.horaFin);
-            if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-            return end - start;
-          })
-          .filter((minutes) => Number.isFinite(minutes));
-
-        const averageReservationMinutes = durations.length > 0
-          ? Math.round(durations.reduce((sum, minutes) => sum + minutes, 0) / durations.length)
-          : null;
-
         setStatsData((prev) => ({
           ...prev,
           totalEvents: events.length,
-          reservationsThisMonth: reservationsThisMonth.length,
-          averageReservationMinutes,
         }));
       })
       .catch(() => {
-        // TODO: Mantener fallback mock cuando eventos/reservas no estén disponibles.
-        setStatsData((prev) => ({
-          ...prev,
-          totalEvents: null,
-          reservationsThisMonth: null,
-          averageReservationMinutes: null,
-        }));
+        setStatsData((prev) => ({ ...prev, totalEvents: null }));
       });
   }, []);
 
@@ -229,8 +185,8 @@ const HomePage = () => {
     };
   }, [fetchParks, fetchPublicStats]);
 
-  const parksSubtitle = Number.isFinite(statsData.totalParks) && Number.isFinite(statsData.totalEvents)
-    ? `${PARKS_SECTION.subtitle} · ${statsData.totalParks} parques · ${statsData.totalEvents} eventos`
+  const parksSubtitle = Number.isFinite(statsData.totalParks)
+    ? `${PARKS_SECTION.subtitle} · ${statsData.totalParks} parque${statsData.totalParks !== 1 ? 's' : ''}${Number.isFinite(statsData.totalEvents) ? ` · ${statsData.totalEvents} eventos` : ''}`
     : PARKS_SECTION.subtitle;
 
   // ─── Variantes de animación ────────────────────────────────────────────────
