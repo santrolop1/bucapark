@@ -108,9 +108,7 @@ app.use(
       'auth-service'
     ),
 
-    pathRewrite: {
-      '^/api/auth': '/api/auth',
-    },
+    pathRewrite: (path) => `/api/auth${path === '/' ? '' : path}`,
   })
 );
 
@@ -123,9 +121,7 @@ app.use(
       'parks-service'
     ),
 
-    pathRewrite: {
-      '^/api/parks': '/api/parks',
-    },
+    pathRewrite: (path) => `/api/parks${path === '/' ? '' : path}`,
   })
 );
 
@@ -138,10 +134,7 @@ app.use(
       'reservation-service'
     ),
 
-    pathRewrite: {
-      '^/api/reservations':
-        '/api/reservations',
-    },
+    pathRewrite: (path) => `/api/reservations${path === '/' ? '' : path}`,
   })
 );
 
@@ -154,10 +147,7 @@ app.use(
       'events-service'
     ),
 
-    pathRewrite: {
-      '^/api/events':
-        '/api/events',
-    },
+    pathRewrite: (path) => `/api/events${path === '/' ? '' : path}`,
   })
 );
 
@@ -170,10 +160,7 @@ app.use(
       'incidents-service'
     ),
 
-    pathRewrite: {
-      '^/api/incidents':
-        '/api/incidents',
-    },
+    pathRewrite: (path) => `/api/incidents${path === '/' ? '' : path}`,
   })
 );
 
@@ -186,10 +173,7 @@ app.use(
       'maintenance-service'
     ),
 
-    pathRewrite: {
-      '^/api/maintenance':
-        '/api/maintenance',
-    },
+    pathRewrite: (path) => `/api/maintenance${path === '/' ? '' : path}`,
   })
 );
 
@@ -202,10 +186,7 @@ app.use(
       'inventory-service'
     ),
 
-    pathRewrite: {
-      '^/api/inventory':
-        '/api/inventory',
-    },
+    pathRewrite: (path) => `/api/inventory${path === '/' ? '' : path}`,
   })
 );
 
