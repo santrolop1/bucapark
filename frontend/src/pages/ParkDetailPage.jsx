@@ -536,9 +536,9 @@ export default function ParkDetailPage() {
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      parkInfo.estado === 'activo' ? 'bg-[#8bc34a] text-[#1a332a]' : 'bg-[#ff9800] text-white'
+                      (parkInfo.estado || '').toLowerCase() === 'activo' ? 'bg-[#8bc34a] text-[#1a332a]' : 'bg-[#ff9800] text-white'
                     }`}>
-                      {parkInfo.estado === 'activo' ? 'Abierto ahora' : 'Cerrado'}
+                      {(parkInfo.estado || '').toLowerCase() === 'activo' ? 'Abierto ahora' : 'Cerrado'}
                     </span>
                     <span className="flex items-center gap-1 text-white/90 text-xs font-medium">
                       <Star className="h-3.5 w-3.5 text-[#ffd54f] fill-[#ffd54f]" />

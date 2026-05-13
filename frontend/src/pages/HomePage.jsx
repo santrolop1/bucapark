@@ -156,7 +156,7 @@ const HomePage = () => {
         setStatsData((prev) => ({
           ...prev,
           totalParks: list.length,
-          activeParks: list.filter((park) => park?.estado === 'activo').length,
+          activeParks: list.filter((park) => (park?.estado || '').toLowerCase() === 'activo').length,
         }));
       })
       .catch(() => {
@@ -562,12 +562,12 @@ const HomePage = () => {
                         >
                           <span
                             className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                              park.estado === 'activo'
+                              (park.estado || '').toLowerCase() === 'activo'
                                 ? 'bg-[#8bc34a] text-[#1a332a]'
                                 : 'bg-[#ff9800] text-white'
                             }`}
                           >
-                            {park.estado === 'activo'
+                            {(park.estado || '').toLowerCase() === 'activo'
                               ? PARKS_SECTION.openLabel
                               : PARKS_SECTION.maintenanceLabel}
                           </span>

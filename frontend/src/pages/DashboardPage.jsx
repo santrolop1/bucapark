@@ -177,7 +177,7 @@ const formatEventDate = (fechaStr) => {
 
 // Convierte un evento real del backend al formato que espera la UI
 const mapEvent = (event, index, parkNameById = {}) => ({
-  id: event._id || index,
+  id: event.id || event._id || index,
   nombre: event.nombre || event.titulo || 'Evento',
   parque: parkNameById[event.parkId] || event.parque?.nombre || event.parque || 'Parque municipal',
   fecha: formatEventDate(event.fecha),
