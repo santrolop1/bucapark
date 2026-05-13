@@ -1,237 +1,170 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
+const https = require('https');
+const http  = require('http');
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+const cors    = require('cors');
+const helmet  = require('helmet');
+const morgan  = require('morgan');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const {
-  createProxyMiddleware,
-} = require('http-proxy-middleware');
-
-const app = express();
-
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ── Mapa de servicios ────────────────────────────────────────────────────────
+// Centraliza nombres, rutas y targets para evitar repetición.
+const SERVICES = {
+  auth:        { prefix: '/api/auth',        url: process.env.AUTH_SERVICE_URL        || 'http://127.0.0.1:3001', name: 'auth-service' },
+  parks:       { prefix: '/api/parks',       url: process.env.PARKS_SERVICE_URL       || 'http://127.0.0.1:3002', name: 'parks-service' },
+  reservations:{ prefix: '/api/reservations',url: process.env.RESERVATION_SERVICE_URL || 'http://127.0.0.1:3003', name: 'reservation-service' },
+  events:      { prefix: '/api/events',      url: process.env.EVENTS_SERVICE_URL      || 'http://127.0.0.1:3004', name: 'events-service' },
+  incidents:   { prefix: '/api/incidents',   url: process.env.INCIDENTS_SERVICE_URL   || 'http://127.0.0.1:3005', name: 'incidents-service' },
+  maintenance: { prefix: '/api/maintenance', url: process.env.MAINTENANCE_SERVICE_URL || 'http://127.0.0.1:3006', name: 'maintenance-service' },
+  inventory:   { prefix: '/api/inventory',   url: process.env.INVENTORY_SERVICE_URL   || 'http://127.0.0.1:3007', name: 'inventory-service' },
+};
+
+// ── Middlewares globales ─────────────────────────────────────────────────────
 app.use(helmet());
-// CORS_ORIGIN en producción: ej. "https://bucapark.vercel.app"
-// Sin CORS_ORIGIN (desarrollo local): acepta todos los orígenes
 app.use(cors(
   process.env.CORS_ORIGIN
     ? { origin: process.env.CORS_ORIGIN.split(',').map(s => s.trim()) }
     : {}
 ));
 app.use(express.json());
+app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 
-app.get('/health', (req, res) => {
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-  res.json({
-    service: 'gateway',
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-const proxyConfig = (
-  target,
-  name
-) => ({
-
-  target,
-
+// Construye el proxy handler para un servicio.
+// pathRewrite reconstruye la ruta completa porque http-proxy-middleware v4
+// ya strip el prefijo cuando está montado con app.use('/prefix', ...).
+const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
+  target:       url,
   changeOrigin: true,
+  proxyTimeout: 15000,
+  timeout:      15000,
 
-  proxyTimeout: 10000,
+  pathRewrite: (path) => `${prefix}${path === '/' ? '' : path}`,
 
-  timeout: 10000,
+  on: {
+    proxyReq: (proxyReq, req) => {
+      // Reenvía el body en requests con payload
+      if (req.body && Object.keys(req.body).length) {
+        const body = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type',   'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(body));
+        proxyReq.write(body);
+      }
+      console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${prefix}${req.path}`);
+    },
 
-  onProxyReq: (
-    proxyReq,
-    req
-  ) => {
+    proxyRes: (proxyRes, req) => {
+      const status = proxyRes.statusCode;
+      if (status >= 500) {
+        console.error(`[PROXY ✗] ${name}: ${req.method} ${req.originalUrl} ← ${status} (error upstream)`);
+      } else if (status >= 400) {
+        // 404 con content-type text/plain = Render devuelve "no-server" (servicio no desplegado)
+        const ct = proxyRes.headers['content-type'] || '';
+        if (status === 404 && ct.includes('text/plain')) {
+          console.error(`[PROXY ✗] ${name}: upstream devuelve 404 text/plain — el servicio probablemente NO está desplegado en Render`);
+        } else {
+          console.warn(`[PROXY ⚠] ${name}: ${req.method} ${req.originalUrl} ← ${status}`);
+        }
+      }
+    },
 
-    console.log(
-      `[PROXY] ${name}: ${req.method} ${req.originalUrl}`
-    );
+    error: (err, req, res) => {
+      console.error(`[PROXY ✗] ${name}: ${err.code || err.message} — target: ${url}`);
 
-    if (
-      req.body &&
-      Object.keys(req.body).length
-    ) {
+      if (err.code === 'ECONNREFUSED') {
+        console.error(`           → El servicio NO está corriendo en ${url}`);
+      } else if (err.code === 'ENOTFOUND') {
+        console.error(`           → DNS falló para ${url} — verificá la variable de entorno`);
+      } else if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
+        console.error(`           → Timeout conectando a ${url}`);
+      }
 
-      const bodyData =
-        JSON.stringify(req.body);
-
-      proxyReq.setHeader(
-        'Content-Type',
-        'application/json'
-      );
-
-      proxyReq.setHeader(
-        'Content-Length',
-        Buffer.byteLength(bodyData)
-      );
-
-      proxyReq.write(bodyData);
-    }
-  },
-
-  onError: (
-    err,
-    req,
-    res
-  ) => {
-
-    console.error(
-      `[PROXY ERROR] ${name}:`,
-      err.message
-    );
-
-    if (!res.headersSent) {
-
-      res.status(502).json({
-
-        success: false,
-
-        error:
-          `${name} no disponible`,
-      });
-    }
+      if (!res.headersSent) {
+        res.status(502).json({
+          success: false,
+          error:   `${name} no disponible`,
+          detail:  err.code || err.message,
+        });
+      }
+    },
   },
 });
 
-app.use(
-  '/api/auth',
-  createProxyMiddleware({
+// ── Health del gateway ───────────────────────────────────────────────────────
+app.get('/health', (_req, res) => {
+  res.json({ service: 'gateway', status: 'OK', timestamp: new Date().toISOString() });
+});
 
-    ...proxyConfig(
-      process.env.AUTH_SERVICE_URL || 'http://127.0.0.1:3001',
-      'auth-service'
-    ),
+// ── Status de todos los servicios upstream ───────────────────────────────────
+// Llama al /health de cada microservicio y devuelve un resumen.
+app.get('/api/status', async (_req, res) => {
+  const ping = (svc) => new Promise((resolve) => {
+    const target = `${svc.url}/health`;
+    const mod    = target.startsWith('https') ? https : http;
+    const timer  = setTimeout(() => resolve({ name: svc.name, target: svc.url, status: 'timeout' }), 4000);
 
-    pathRewrite: (path) => `/api/auth${path === '/' ? '' : path}`,
-  })
-);
+    try {
+      const req = mod.get(target, (r) => {
+        clearTimeout(timer);
+        let raw = '';
+        r.on('data', (c) => { raw += c; });
+        r.on('end', () => {
+          try {
+            const body = JSON.parse(raw);
+            resolve({
+              name:     svc.name,
+              target:   svc.url,
+              status:   r.statusCode === 200 ? 'ok' : 'error',
+              httpCode: r.statusCode,
+              db:       body.database || undefined,
+            });
+          } catch {
+            resolve({ name: svc.name, target: svc.url, status: r.statusCode === 200 ? 'ok' : 'error', httpCode: r.statusCode });
+          }
+        });
+      });
+      req.on('error', (err) => {
+        clearTimeout(timer);
+        resolve({ name: svc.name, target: svc.url, status: 'down', error: err.code || err.message });
+      });
+      req.setTimeout(4000, () => { req.destroy(); });
+    } catch (err) {
+      clearTimeout(timer);
+      resolve({ name: svc.name, target: svc.url, status: 'down', error: err.message });
+    }
+  });
 
-app.use(
-  '/api/parks',
-  createProxyMiddleware({
+  const results = await Promise.all(Object.values(SERVICES).map(ping));
+  const allOk   = results.every(r => r.status === 'ok');
 
-    ...proxyConfig(
-      process.env.PARKS_SERVICE_URL || 'http://127.0.0.1:3002',
-      'parks-service'
-    ),
-
-    pathRewrite: (path) => `/api/parks${path === '/' ? '' : path}`,
-  })
-);
-
-app.use(
-  '/api/reservations',
-  createProxyMiddleware({
-
-    ...proxyConfig(
-      process.env.RESERVATION_SERVICE_URL || 'http://127.0.0.1:3003',
-      'reservation-service'
-    ),
-
-    pathRewrite: (path) => `/api/reservations${path === '/' ? '' : path}`,
-  })
-);
-
-app.use(
-  '/api/events',
-  createProxyMiddleware({
-
-    ...proxyConfig(
-      process.env.EVENTS_SERVICE_URL || 'http://127.0.0.1:3004',
-      'events-service'
-    ),
-
-    pathRewrite: (path) => `/api/events${path === '/' ? '' : path}`,
-  })
-);
-
-app.use(
-  '/api/incidents',
-  createProxyMiddleware({
-
-    ...proxyConfig(
-      process.env.INCIDENTS_SERVICE_URL || 'http://127.0.0.1:3005',
-      'incidents-service'
-    ),
-
-    pathRewrite: (path) => `/api/incidents${path === '/' ? '' : path}`,
-  })
-);
-
-app.use(
-  '/api/maintenance',
-  createProxyMiddleware({
-
-    ...proxyConfig(
-      process.env.MAINTENANCE_SERVICE_URL || 'http://127.0.0.1:3006',
-      'maintenance-service'
-    ),
-
-    pathRewrite: (path) => `/api/maintenance${path === '/' ? '' : path}`,
-  })
-);
-
-app.use(
-  '/api/inventory',
-  createProxyMiddleware({
-
-    ...proxyConfig(
-      process.env.INVENTORY_SERVICE_URL || 'http://127.0.0.1:3007',
-      'inventory-service'
-    ),
-
-    pathRewrite: (path) => `/api/inventory${path === '/' ? '' : path}`,
-  })
-);
-
-app.use((req, res) => {
-
-  res.status(404).json({
-
-    success: false,
-
-    error:
-      'Ruta no encontrada en gateway',
+  res.status(allOk ? 200 : 207).json({
+    gateway:   'ok',
+    timestamp: new Date().toISOString(),
+    services:  results,
   });
 });
 
+// ── Proxies ──────────────────────────────────────────────────────────────────
+Object.values(SERVICES).forEach(svc => {
+  app.use(svc.prefix, makeProxy(svc));
+});
+
+// ── 404 catch-all ────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: 'Ruta no encontrada en gateway' });
+});
+
+// ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-
-  console.log(
-    `Gateway en puerto ${PORT}`
-  );
-
-  console.log(
-    `Proxy /api/auth -> ${process.env.AUTH_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/parks -> ${process.env.PARKS_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/reservations -> ${process.env.RESERVATION_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/events -> ${process.env.EVENTS_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/incidents -> ${process.env.INCIDENTS_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/maintenance -> ${process.env.MAINTENANCE_SERVICE_URL}`
-  );
-
-  console.log(
-    `Proxy /api/inventory -> ${process.env.INVENTORY_SERVICE_URL}`
-  );
+  console.log(`\n=== GATEWAY iniciado en puerto ${PORT} ===`);
+  Object.values(SERVICES).forEach(({ name, prefix, url }) => {
+    const configured = url.includes('127.0.0.1') ? '⚠ LOCAL (env var no seteada)' : '✓ REMOTO';
+    console.log(`  ${prefix.padEnd(22)} → ${url}  [${name}] ${configured}`);
+  });
+  console.log('');
 });

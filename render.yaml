@@ -1,0 +1,104 @@
+# render.yaml — BucaPark Blueprint
+# Despliega los 5 microservicios que faltan en Render.
+# El gateway (gateway-3xen) ya está desplegado y NO se incluye aquí.
+#
+# PASOS:
+#   1. Commit y push este archivo al repo de GitHub
+#   2. Render Dashboard → "New Blueprint Instance" → conectar repo → Deploy
+#   3. Para cada servicio, Render pedirá los env vars marcados como sync:false
+#      Ponés los mismos valores que están en los archivos .env locales:
+#        MONGO_URI  = mongodb+srv://bucapark_admin:Bucapark2024@bucapark-cluster.1mnrvag.mongodb.net/bucapark_db?retryWrites=true&w=majority&appName=bucapark-cluster
+#        JWT_SECRET = /hz+NIveNxZgIsZ4mkQ0+SEFnrCoGDJIlhh5F/mlFG4=
+#   4. Una vez desplegados, el gateway enruta automáticamente (ya tiene las URLs configuradas)
+
+services:
+
+  # ── auth-service ────────────────────────────────────────────────────────────
+  # URL resultante: https://auth-service.onrender.com
+  - type: web
+    name: auth-service
+    env: node
+    plan: free
+    rootDir: auth-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── events-service ──────────────────────────────────────────────────────────
+  # URL resultante: https://events-service.onrender.com
+  - type: web
+    name: events-service
+    env: node
+    plan: free
+    rootDir: events-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── reservation-service ─────────────────────────────────────────────────────
+  # URL resultante: https://reservation-service.onrender.com
+  - type: web
+    name: reservation-service
+    env: node
+    plan: free
+    rootDir: reservation-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── maintenance-service ─────────────────────────────────────────────────────
+  # URL resultante: https://maintenance-service.onrender.com
+  - type: web
+    name: maintenance-service
+    env: node
+    plan: free
+    rootDir: maintenance-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── inventory-service ───────────────────────────────────────────────────────
+  # URL resultante: https://inventory-service.onrender.com
+  - type: web
+    name: inventory-service
+    env: node
+    plan: free
+    rootDir: inventory-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
