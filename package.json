@@ -1,6 +1,16 @@
 {
+  "name": "bucapark",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node --watch src/app.js"
+    "dev": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue,bgGreen,bgYellow,bgRed,bgMagenta,bgCyan,bgWhite,bgGray\" --names \"GATEWAY,AUTH,PARKS,RESERV,EVENTS,INCIDENTS,MAINT,INVENT\" \"npm run dev --prefix gateway\" \"npm run dev --prefix auth-service\" \"npm run dev --prefix parks-service\" \"npm run dev --prefix reservation-service\" \"npm run dev --prefix events-service\" \"npm run dev --prefix incidents-service\" \"npm run dev --prefix maintenance-service\" \"npm run dev --prefix inventory-service\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
+    "install:all": "npm install --prefix gateway && npm install --prefix auth-service && npm install --prefix parks-service && npm install --prefix reservation-service && npm install --prefix events-service && npm install --prefix incidents-service && npm install --prefix maintenance-service && npm install --prefix inventory-service && npm install --prefix frontend",
+    "kill": "powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'Procesos Node terminados'\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

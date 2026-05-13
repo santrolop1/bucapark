@@ -26,14 +26,14 @@ const register = async (req, res) => {
 
     if (!nombre || !email || !password) {
       return res.status(400).json(
-        buildResponse(false, 'Nombre, email y contraseÃ±a son requeridos')
+        buildResponse(false, 'Nombre, email y contraseña son requeridos')
       );
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(409).json(
-        buildResponse(false, 'El email ya estÃ¡ registrado')
+        buildResponse(false, 'El email ya está registrado')
       );
     }
 
@@ -62,7 +62,7 @@ const register = async (req, res) => {
     }
 
     if (error.code === 11000) {
-      return res.status(409).json(buildResponse(false, 'El email ya estÃ¡ registrado'));
+      return res.status(409).json(buildResponse(false, 'El email ya está registrado'));
     }
 
     return res.status(500).json(buildResponse(false, 'Error interno del servidor'));
@@ -75,21 +75,21 @@ const login = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json(
-        buildResponse(false, 'Email y contraseÃ±a son requeridos')
+        buildResponse(false, 'Email y contraseña son requeridos')
       );
     }
 
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) {
       return res.status(401).json(
-        buildResponse(false, 'Credenciales invÃ¡lidas')
+        buildResponse(false, 'Credenciales inválidas')
       );
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json(
-        buildResponse(false, 'Credenciales invÃ¡lidas')
+        buildResponse(false, 'Credenciales inválidas')
       );
     }
 

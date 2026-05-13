@@ -24,8 +24,6 @@ const app = express();
 
 const PORT = process.env.PORT || 3006;
 
-connectDB();
-
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -47,7 +45,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use(
-  '/',
+  '/api/maintenance',
   maintenanceRoutes
 );
 

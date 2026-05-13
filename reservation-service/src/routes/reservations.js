@@ -50,6 +50,7 @@ router.get(
 
 router.get(
   "/",
+  authMiddleware,
   getReservations
 );
 

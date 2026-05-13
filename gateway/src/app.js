@@ -13,7 +13,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet());
-app.use(cors());
+// CORS_ORIGIN en producción: ej. "https://bucapark.vercel.app"
+// Sin CORS_ORIGIN (desarrollo local): acepta todos los orígenes
+app.use(cors(
+  process.env.CORS_ORIGIN
+    ? { origin: process.env.CORS_ORIGIN.split(',').map(s => s.trim()) }
+    : {}
+));
 app.use(express.json());
 
 app.get('/health', (req, res) => {
