@@ -11,16 +11,26 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Mapa de servicios ────────────────────────────────────────────────────────
-// Centraliza nombres, rutas y targets para evitar repetición.
+// ── Resolución de URLs de microservicios ─────────────────────────────────────
+// Acepta dos patrones de variable de entorno:
+//   *_SERVICE_URL  → URL completa  (ej: https://buca-events.onrender.com)
+//   *_SERVICE_HOST → solo hostname (ej: buca-events.onrender.com) — viene de
+//                    render.yaml fromService con property: host
+// Si ninguna está seteada, usa localhost como fallback para desarrollo local.
+const svcUrl = (urlVar, hostVar, localPort) => {
+  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
+  if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
+  return `http://127.0.0.1:${localPort}`;
+};
+
 const SERVICES = {
-  auth:        { prefix: '/api/auth',        url: process.env.AUTH_SERVICE_URL        || 'http://127.0.0.1:3001', name: 'auth-service' },
-  parks:       { prefix: '/api/parks',       url: process.env.PARKS_SERVICE_URL       || 'http://127.0.0.1:3002', name: 'parks-service' },
-  reservations:{ prefix: '/api/reservations',url: process.env.RESERVATION_SERVICE_URL || 'http://127.0.0.1:3003', name: 'reservation-service' },
-  events:      { prefix: '/api/events',      url: process.env.EVENTS_SERVICE_URL      || 'http://127.0.0.1:3004', name: 'events-service' },
-  incidents:   { prefix: '/api/incidents',   url: process.env.INCIDENTS_SERVICE_URL   || 'http://127.0.0.1:3005', name: 'incidents-service' },
-  maintenance: { prefix: '/api/maintenance', url: process.env.MAINTENANCE_SERVICE_URL || 'http://127.0.0.1:3006', name: 'maintenance-service' },
-  inventory:   { prefix: '/api/inventory',   url: process.env.INVENTORY_SERVICE_URL   || 'http://127.0.0.1:3007', name: 'inventory-service' },
+  auth:        { prefix: '/api/auth',        name: 'auth-service',        url: svcUrl('AUTH_SERVICE_URL',        'AUTH_SERVICE_HOST',        3001) },
+  parks:       { prefix: '/api/parks',       name: 'parks-service',       url: svcUrl('PARKS_SERVICE_URL',       'PARKS_SERVICE_HOST',       3002) },
+  reservations:{ prefix: '/api/reservations',name: 'reservation-service', url: svcUrl('RESERVATION_SERVICE_URL', 'RESERVATION_SERVICE_HOST', 3003) },
+  events:      { prefix: '/api/events',      name: 'events-service',      url: svcUrl('EVENTS_SERVICE_URL',      'EVENTS_SERVICE_HOST',      3004) },
+  incidents:   { prefix: '/api/incidents',   name: 'incidents-service',   url: svcUrl('INCIDENTS_SERVICE_URL',   'INCIDENTS_SERVICE_HOST',   3005) },
+  maintenance: { prefix: '/api/maintenance', name: 'maintenance-service', url: svcUrl('MAINTENANCE_SERVICE_URL', 'MAINTENANCE_SERVICE_HOST', 3006) },
+  inventory:   { prefix: '/api/inventory',   name: 'inventory-service',   url: svcUrl('INVENTORY_SERVICE_URL',   'INVENTORY_SERVICE_HOST',   3007) },
 };
 
 // ── Middlewares globales ─────────────────────────────────────────────────────

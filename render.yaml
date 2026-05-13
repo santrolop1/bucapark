@@ -1,29 +1,17 @@
-# render.yaml — BucaPark Blueprint COMPLETO
-#
-# PROBLEMA CONFIRMADO: los nombres events-service, reservation-service,
-# inventory-service ya están tomados por otros usuarios en Render.
-# Se usan nombres únicos con prefijo "buca-" para evitar colisiones.
+# render.yaml — BucaPark Blueprint
 #
 # DEPLOY:
-#   1. Commit + push este archivo
-#   2. render.com → New → Blueprint Instance → conectar repo santrolop1/bucapark
-#   3. Render pide los env vars marcados sync:false. Usar:
+#   1. render.com → New → Blueprint Instance → conectar repo → Deploy
+#   2. Render pedirá los env vars marcados sync:false. Usar:
 #        MONGO_URI  = mongodb+srv://bucapark_admin:Bucapark2024@bucapark-cluster.1mnrvag.mongodb.net/bucapark_db?retryWrites=true&w=majority&appName=bucapark-cluster
 #        JWT_SECRET = /hz+NIveNxZgIsZ4mkQ0+SEFnrCoGDJIlhh5F/mlFG4=
-#   4. Tras el deploy, copiar la URL del buca-gateway (ej: buca-gateway.onrender.com)
-#   5. Vercel Dashboard → Settings → Environment Variables:
+#   3. Al terminar el deploy, copiar la URL de buca-gateway (ej: buca-gateway.onrender.com)
+#   4. Vercel → Settings → Environment Variables:
 #        VITE_API_BASE_URL = https://buca-gateway.onrender.com
-#   6. Redeploy en Vercel (o trigger automático por push)
 #
-# URLs que quedarán activas:
-#   https://buca-gateway.onrender.com         (gateway)
-#   https://buca-auth.onrender.com            (auth)
-#   https://buca-parks.onrender.com           (parks)
-#   https://buca-reservations.onrender.com    (reservas)
-#   https://buca-events.onrender.com          (eventos)
-#   https://buca-incidents.onrender.com       (incidentes)
-#   https://buca-maintenance.onrender.com     (mantenimiento)
-#   https://buca-inventory.onrender.com       (inventario)
+# fromService con property: host inyecta el hostname público del servicio
+# (ej: "buca-events.onrender.com"). El gateway lo recibe como *_SERVICE_HOST
+# y construye https://{host} internamente.
 
 services:
 
@@ -147,8 +135,8 @@ services:
         sync: false
 
   # ── gateway ──────────────────────────────────────────────────────────────────
-  # fromService inyecta automáticamente las URLs de cada servicio desplegado
-  # en este mismo Blueprint. No hay que poner URLs a mano.
+  # fromService property: host → inyecta el hostname público de cada servicio
+  # El gateway reconstruye https://{host} usando la función svcUrl()
   - type: web
     name: buca-gateway
     env: node
@@ -162,38 +150,38 @@ services:
         value: production
       - key: CORS_ORIGIN
         value: https://bucapark.vercel.app
-      - key: AUTH_SERVICE_URL
+      - key: AUTH_SERVICE_HOST
         fromService:
           type: web
           name: buca-auth
-          property: url
-      - key: PARKS_SERVICE_URL
+          property: host
+      - key: PARKS_SERVICE_HOST
         fromService:
           type: web
           name: buca-parks
-          property: url
-      - key: RESERVATION_SERVICE_URL
+          property: host
+      - key: RESERVATION_SERVICE_HOST
         fromService:
           type: web
           name: buca-reservations
-          property: url
-      - key: EVENTS_SERVICE_URL
+          property: host
+      - key: EVENTS_SERVICE_HOST
         fromService:
           type: web
           name: buca-events
-          property: url
-      - key: INCIDENTS_SERVICE_URL
+          property: host
+      - key: INCIDENTS_SERVICE_HOST
         fromService:
           type: web
           name: buca-incidents
-          property: url
-      - key: MAINTENANCE_SERVICE_URL
+          property: host
+      - key: MAINTENANCE_SERVICE_HOST
         fromService:
           type: web
           name: buca-maintenance
-          property: url
-      - key: INVENTORY_SERVICE_URL
+          property: host
+      - key: INVENTORY_SERVICE_HOST
         fromService:
           type: web
           name: buca-inventory
-          property: url
+          property: host
