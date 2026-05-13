@@ -58,18 +58,16 @@ app.use((req, res) => {
 });
 
 const startServer = async () => {
-  await connectDB();
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log(
-        'events-service corriendo en puerto ' +
-        PORT
-      );
-    }
-  );
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`[EVENTS] Servicio iniciado — puerto ${PORT}`);
+      console.log(`[EVENTS] Rutas: GET /api/events/public | POST /api/events | PATCH /api/events/:id/approve`);
+    });
+  } catch (err) {
+    console.error('[EVENTS] Error en startup:', err.message);
+    process.exit(1);
+  }
 };
 
 startServer();

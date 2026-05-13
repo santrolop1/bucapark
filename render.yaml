@@ -1,22 +1,35 @@
-# render.yaml — BucaPark Blueprint
-# Despliega los 5 microservicios que faltan en Render.
-# El gateway (gateway-3xen) ya está desplegado y NO se incluye aquí.
+# render.yaml — BucaPark Blueprint COMPLETO
 #
-# PASOS:
-#   1. Commit y push este archivo al repo de GitHub
-#   2. Render Dashboard → "New Blueprint Instance" → conectar repo → Deploy
-#   3. Para cada servicio, Render pedirá los env vars marcados como sync:false
-#      Ponés los mismos valores que están en los archivos .env locales:
+# PROBLEMA CONFIRMADO: los nombres events-service, reservation-service,
+# inventory-service ya están tomados por otros usuarios en Render.
+# Se usan nombres únicos con prefijo "buca-" para evitar colisiones.
+#
+# DEPLOY:
+#   1. Commit + push este archivo
+#   2. render.com → New → Blueprint Instance → conectar repo santrolop1/bucapark
+#   3. Render pide los env vars marcados sync:false. Usar:
 #        MONGO_URI  = mongodb+srv://bucapark_admin:Bucapark2024@bucapark-cluster.1mnrvag.mongodb.net/bucapark_db?retryWrites=true&w=majority&appName=bucapark-cluster
 #        JWT_SECRET = /hz+NIveNxZgIsZ4mkQ0+SEFnrCoGDJIlhh5F/mlFG4=
-#   4. Una vez desplegados, el gateway enruta automáticamente (ya tiene las URLs configuradas)
+#   4. Tras el deploy, copiar la URL del buca-gateway (ej: buca-gateway.onrender.com)
+#   5. Vercel Dashboard → Settings → Environment Variables:
+#        VITE_API_BASE_URL = https://buca-gateway.onrender.com
+#   6. Redeploy en Vercel (o trigger automático por push)
+#
+# URLs que quedarán activas:
+#   https://buca-gateway.onrender.com         (gateway)
+#   https://buca-auth.onrender.com            (auth)
+#   https://buca-parks.onrender.com           (parks)
+#   https://buca-reservations.onrender.com    (reservas)
+#   https://buca-events.onrender.com          (eventos)
+#   https://buca-incidents.onrender.com       (incidentes)
+#   https://buca-maintenance.onrender.com     (mantenimiento)
+#   https://buca-inventory.onrender.com       (inventario)
 
 services:
 
-  # ── auth-service ────────────────────────────────────────────────────────────
-  # URL resultante: https://auth-service.onrender.com
+  # ── auth-service ─────────────────────────────────────────────────────────────
   - type: web
-    name: auth-service
+    name: buca-auth
     env: node
     plan: free
     rootDir: auth-service
@@ -31,13 +44,12 @@ services:
       - key: JWT_SECRET
         sync: false
 
-  # ── events-service ──────────────────────────────────────────────────────────
-  # URL resultante: https://events-service.onrender.com
+  # ── parks-service ────────────────────────────────────────────────────────────
   - type: web
-    name: events-service
+    name: buca-parks
     env: node
     plan: free
-    rootDir: events-service
+    rootDir: parks-service
     buildCommand: npm install --omit=dev
     startCommand: npm start
     healthCheckPath: /health
@@ -49,10 +61,9 @@ services:
       - key: JWT_SECRET
         sync: false
 
-  # ── reservation-service ─────────────────────────────────────────────────────
-  # URL resultante: https://reservation-service.onrender.com
+  # ── reservation-service ──────────────────────────────────────────────────────
   - type: web
-    name: reservation-service
+    name: buca-reservations
     env: node
     plan: free
     rootDir: reservation-service
@@ -67,10 +78,43 @@ services:
       - key: JWT_SECRET
         sync: false
 
-  # ── maintenance-service ─────────────────────────────────────────────────────
-  # URL resultante: https://maintenance-service.onrender.com
+  # ── events-service ───────────────────────────────────────────────────────────
   - type: web
-    name: maintenance-service
+    name: buca-events
+    env: node
+    plan: free
+    rootDir: events-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── incidents-service ────────────────────────────────────────────────────────
+  - type: web
+    name: buca-incidents
+    env: node
+    plan: free
+    rootDir: incidents-service
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # ── maintenance-service ──────────────────────────────────────────────────────
+  - type: web
+    name: buca-maintenance
     env: node
     plan: free
     rootDir: maintenance-service
@@ -85,10 +129,9 @@ services:
       - key: JWT_SECRET
         sync: false
 
-  # ── inventory-service ───────────────────────────────────────────────────────
-  # URL resultante: https://inventory-service.onrender.com
+  # ── inventory-service ────────────────────────────────────────────────────────
   - type: web
-    name: inventory-service
+    name: buca-inventory
     env: node
     plan: free
     rootDir: inventory-service
@@ -102,3 +145,55 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+
+  # ── gateway ──────────────────────────────────────────────────────────────────
+  # fromService inyecta automáticamente las URLs de cada servicio desplegado
+  # en este mismo Blueprint. No hay que poner URLs a mano.
+  - type: web
+    name: buca-gateway
+    env: node
+    plan: free
+    rootDir: gateway
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        value: https://bucapark.vercel.app
+      - key: AUTH_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-auth
+          property: url
+      - key: PARKS_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-parks
+          property: url
+      - key: RESERVATION_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-reservations
+          property: url
+      - key: EVENTS_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-events
+          property: url
+      - key: INCIDENTS_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-incidents
+          property: url
+      - key: MAINTENANCE_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-maintenance
+          property: url
+      - key: INVENTORY_SERVICE_URL
+        fromService:
+          type: web
+          name: buca-inventory
+          property: url

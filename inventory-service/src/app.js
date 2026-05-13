@@ -58,18 +58,16 @@ app.use((req, res) => {
 });
 
 const startServer = async () => {
-  await connectDB();
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log(
-        'inventory-service corriendo en puerto ' +
-        PORT
-      );
-    }
-  );
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`[INVENTORY] Servicio iniciado — puerto ${PORT}`);
+      console.log(`[INVENTORY] Rutas: GET /api/inventory | POST /api/inventory`);
+    });
+  } catch (err) {
+    console.error('[INVENTORY] Error en startup:', err.message);
+    process.exit(1);
+  }
 };
 
 startServer();

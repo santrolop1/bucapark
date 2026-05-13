@@ -58,18 +58,16 @@ app.use((req, res) => {
 });
 
 const startServer = async () => {
-  await connectDB();
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log(
-        'maintenance-service corriendo en puerto ' +
-        PORT
-      );
-    }
-  );
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`[MAINTENANCE] Servicio iniciado — puerto ${PORT}`);
+      console.log(`[MAINTENANCE] Rutas: GET /api/maintenance | POST /api/maintenance`);
+    });
+  } catch (err) {
+    console.error('[MAINTENANCE] Error en startup:', err.message);
+    process.exit(1);
+  }
 };
 
 startServer();
