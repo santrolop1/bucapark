@@ -2,11 +2,17 @@ import axios from 'axios';
 
 const TOKEN_KEY = 'bucapark_token';
 
-// En producción (Vercel) definir VITE_API_BASE_URL=https://tu-gateway.onrender.com
-// En desarrollo local queda vacío y el proxy de Vite lo maneja automáticamente
+// En producción (Vercel): VITE_API_BASE_URL=https://gateway-3xen.onrender.com
+// (con o sin /api al final — se normaliza automáticamente)
+// En desarrollo local: vacío → el proxy de Vite maneja /api automáticamente
+const rawBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const baseURL = rawBase
+  ? (rawBase.endsWith('/api') ? rawBase : `${rawBase}/api`)
+  : '/api';
+
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  baseURL,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 

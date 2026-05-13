@@ -8,6 +8,8 @@ import ParksPage from '../pages/ParksPage';
 import ParkDetailPage from '../pages/ParkDetailPage';
 import NewReservationPage from '../pages/NewReservationPage';
 import EventsPage from '../pages/EventsPage';
+import NewEventPage from '../pages/NewEventPage';
+import NewIncidentPage from '../pages/NewIncidentPage';
 import DashboardPage from '../pages/DashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
@@ -65,6 +67,22 @@ function AppRouter() {
           element={
             <PrivateRoute>
               <NewReservationPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/events/new"
+          element={
+            <PrivateRoute>
+              <NewEventPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/incidents/new"
+          element={
+            <PrivateRoute>
+              <NewIncidentPage />
             </PrivateRoute>
           }
         />

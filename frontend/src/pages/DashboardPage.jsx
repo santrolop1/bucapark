@@ -95,7 +95,7 @@ const ACTIONS = [
     icon: Plus,
     color: 'bg-[#2d4a3e] text-white',
     desc: 'Reservar espacio',
-    to: '/reservations/new',  // ⚠ página no implementada aún
+    to: '/reservations/new',
   },
   {
     id: 2,
@@ -103,7 +103,7 @@ const ACTIONS = [
     icon: AlertTriangle,
     color: 'bg-[#fff3e0] text-[#e65100]',
     desc: 'Incidencia',
-    to: '/incidents/new',     // ⚠ página no implementada aún
+    to: '/incidents/new',
   },
   {
     id: 3,
@@ -111,7 +111,7 @@ const ACTIONS = [
     icon: Calendar,
     color: 'bg-[#e8f5e9] text-[#2e7d32]',
     desc: 'Nuevo evento',
-    to: '/events/new',        // ⚠ página no implementada aún
+    to: '/events/new',
   },
   {
     id: 4,
@@ -119,7 +119,7 @@ const ACTIONS = [
     icon: MapPin,
     color: 'bg-[#e3f2fd] text-[#1565c0]',
     desc: 'Explorar',
-    to: '/parks',             // ✓ ruta existente
+    to: '/parks',
   },
 ];
 
@@ -148,13 +148,13 @@ const EVENT_COLORS = ['#8bc34a', '#ff9800', '#f44336', '#2196f3'];
 // ─── Mapeo de datos del backend al formato de display ─────────────────────────
 
 // Convierte un parque real del backend al formato que espera la UI
+// Normaliza estado a minúsculas para comparación consistente
 const mapPark = (park, index) => ({
   id: park._id || index,
   nombre: park.nombre || 'Parque',
   direccion: park.direccion || 'Bucaramanga',
   ciudad: park.ciudad || '',
-  estado: park.estado || 'activo',
-  // Estos campos no existen en el backend aún → placeholder visual
+  estado: (park.estado || 'activo').toLowerCase(),
   ocupacion: 0,
   capacidad: park.capacidad || 100,
   reservasHoy: 0,
@@ -334,7 +334,7 @@ const DashboardPage = () => {
   const computedStats = STATS_CONFIG.map((cfg) => ({
     ...cfg,
     value: cfg.key === 'parques'
-      ? parks.filter((p) => p.estado === 'activo').length
+      ? parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length
       : cfg.key === 'eventos'
       ? events.length
       : cfg.key === 'reservas' && Number.isFinite(myReservationsCount)
@@ -461,7 +461,7 @@ const DashboardPage = () => {
                   <>
                     Hay{' '}
                     <span className="font-bold text-[#1a332a]">
-                      {parks.filter((p) => p.estado === 'activo').length} parques abiertos
+                      {parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length} parques abiertos
                     </span>
                     <span className="text-[#7a8a7f]"> de {parks.length}</span>
                     {events.length > 0 && (

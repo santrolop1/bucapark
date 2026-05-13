@@ -7,8 +7,9 @@
 // Fácil de editar para juniors.
 // ============================================================
 
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { eventService } from '../api/services';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
@@ -396,23 +397,89 @@ function EventCardSkeleton() {
 // 3. PÁGINA PRINCIPAL
 // ============================================================
 
+// Mapea un evento del backend al formato que usa la UI
+const mapApiEvent = (event, index) => {
+  const fecha = event.fecha ? new Date(event.fecha) : null;
+  const hoy = new Date();
+  const manana = new Date(hoy);
+  manana.setDate(manana.getDate() + 1);
+
+  let fechaLabel = 'Próximo';
+  if (fecha) {
+    if (fecha.toDateString() === hoy.toDateString()) fechaLabel = 'Hoy';
+    else if (fecha.toDateString() === manana.toDateString()) fechaLabel = 'Mañana';
+    else fechaLabel = fecha.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  const categoriaMap = { deporte: '#8bc34a', cultura: '#ff9800', musica: '#e91e63', educacion: '#2196f3', naturaleza: '#4caf50', social: '#9c27b0' };
+  // Normaliza alias de categoría que llegan del backend (ej: 'cultural' → 'cultura')
+  const catAlias = { cultural: 'cultura', deportivo: 'deporte', educativo: 'educacion', musical: 'musica' };
+  const rawCat = (event.categoria || '').toLowerCase();
+  const normalizedCat = catAlias[rawCat] || rawCat;
+  const fallbackCatKey = Object.keys(categoriaMap)[index % Object.keys(categoriaMap).length];
+  const categoriaKey = categoriaMap[normalizedCat] ? normalizedCat : fallbackCatKey;
+  const COLORS = ['bg-[#4a6741]', 'bg-[#5a7a6b]', 'bg-[#6b8a7a]', 'bg-[#4a5d41]', 'bg-[#5a6b4a]', 'bg-[#6b7a5b]'];
+
+  return {
+    id: event.id || event._id || index,
+    nombre: event.nombre || 'Evento',
+    descripcion: event.descripcion || '',
+    fecha: fechaLabel,
+    fechaCompleta: event.fecha,
+    hora: event.horaInicio || '10:00',
+    duracion: event.horaFin && event.horaInicio ? event.horaFin : '2h',
+    parque: event.parque?.nombre || event.espacio || event.parkId || 'Parque municipal',
+    categoria: categoriaKey,
+    categoriaLabel: CATEGORIES.find(c => c.id === categoriaKey)?.label || categoriaKey,
+    categoriaColor: categoriaMap[categoriaKey] || '#2d4a3e',
+    asistentes: event.inscritos || 0,
+    maxAsistentes: event.capacidadMaxima || event.capacidad || 100,
+    estado: event.estado === 'Aprobado' ? 'confirmado' : event.estado === 'Rechazado' ? 'cancelado' : 'pendiente',
+    estadoLabel: event.estado || 'Pendiente',
+    organizador: event.organizadorId || 'Organizador',
+    precio: event.precio || 'Gratuito',
+    imagenColor: COLORS[index % COLORS.length],
+    popular: (event.inscritos || 0) > 50,
+  };
+};
+
 export default function EventsPage() {
+  const navigate = useNavigate();
   // Estados de la UI
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid'); // grid | list
+  const [viewMode, setViewMode] = useState('grid');
   const [likedEvents, setLikedEvents] = useState(new Set());
   const [attendingEvents, setAttendingEvents] = useState(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [apiEvents, setApiEvents] = useState(null); // null = no intentado, [] = vacío, [...] = datos
 
-  // TODO: Carga simulada temporal hasta conectar data real desde backend.
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
+  // Carga eventos desde el backend; fallback silencioso al mock si falla
+  const loadEvents = useCallback(async () => {
+    try {
+      const res = await eventService.getPublic();
+      const data = res.data?.data ?? res.data ?? [];
+      setApiEvents(Array.isArray(data) ? data : []);
+    } catch {
+      setApiEvents(null); // null → usar mock
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  // Usa eventos reales si la API respondió (aunque sean 0); mock como fallback
+  const activeEvents = useMemo(() => {
+    if (apiEvents === null) return EVENTS;
+    if (apiEvents.length === 0) return EVENTS;
+    return apiEvents.map(mapApiEvent);
+  }, [apiEvents]);
 
   // Evita uso directo de window.innerWidth en render.
   useEffect(() => {
@@ -422,9 +489,8 @@ export default function EventsPage() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // TODO: Filtrado sobre mock local hasta integrar fuente real de eventos.
   const filteredEvents = useMemo(() => {
-    let result = [...EVENTS];
+    let result = [...activeEvents];
 
     // Filtro por categoría
     if (activeCategory !== 'all') {
@@ -1006,6 +1072,7 @@ export default function EventsPage() {
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/events/new')}
                 className="w-full bg-[#8bc34a] text-[#1a332a] py-3 rounded-xl font-black text-sm hover:bg-[#9ccc65] transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="h-4 w-4" />
