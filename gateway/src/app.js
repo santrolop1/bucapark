@@ -55,8 +55,8 @@ app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
   target:       url,
   changeOrigin: true,
-  proxyTimeout: 15000,
-  timeout:      15000,
+  proxyTimeout: 60000,
+  timeout:      60000,
   pathRewrite: (_path, req) => req.originalUrl,
 
   on: {
