@@ -17,11 +17,9 @@ const PORT = process.env.PORT || 3000;
 //   *_SERVICE_HOST → solo hostname (ej: buca-events.onrender.com) — viene de
 //                    render.yaml fromService con property: host
 // Si ninguna está seteada, usa localhost como fallback para desarrollo local.
-const useRemoteServices = process.env.USE_REMOTE_SERVICES === 'true';
-
 const svcUrl = (urlVar, hostVar, localPort) => {
+  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
   if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
-  if (useRemoteServices && process.env[urlVar]) return process.env[urlVar].replace(/\/$/, '');
   return `http://127.0.0.1:${localPort}`;
 };
 
