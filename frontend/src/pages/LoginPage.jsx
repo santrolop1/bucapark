@@ -48,8 +48,10 @@ const friendlyError = (err) => {
   return BACKEND_ERRORS[msg] || msg || 'Email o contraseña incorrectos.';
 };
 
-const RETRY_DELAY_MS = 8000;
-const MAX_RETRIES    = 4;
+// Render free tier tarda 30-60s en despertar.
+// 10 reintentos x 5s = 50s de cobertura — suficiente para cualquier cold start.
+const RETRY_DELAY_MS = 5000;
+const MAX_RETRIES    = 10;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -109,7 +111,7 @@ const LoginPage = () => {
         const is502 = !err.response || err.response?.status === 502 || err.response?.status === 503;
         if (is502 && attempt < MAX_RETRIES) {
           setRetryCount(attempt + 1);
-          setError(`El servidor está despertando... reintentando (${attempt + 1}/${MAX_RETRIES})`);
+          setError(`Servidor iniciando, por favor esperá... (${attempt + 1}/${MAX_RETRIES}) — puede tardar hasta 60 segundos`);
           await sleep(RETRY_DELAY_MS);
           continue;
         }
