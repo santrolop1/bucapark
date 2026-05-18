@@ -1,24 +1,30 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
+
+const TIPOS_ESPACIO = [
+  'cancha-futbol',
+  'basquetbol',
+  'auditorio',
+  'yoga',
+  'picnic-bbq',
+];
 
 const reservationSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
-      required: [true, 'El ID de usuario es requerido'],
+      required: true,
     },
 
     parkId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: [true, 'El ID del parque es requerido'],
+      type: String,
+      required: true,
     },
-    
-    espacio: {
-  type: String,
-  required: [
-    true,
-    'El espacio es requerido',
-  ],
-},
+
+    tipoEspacio: {
+      type: String,
+      required: [true, 'El tipo de espacio es requerido'],
+      enum: TIPOS_ESPACIO,
+    },
 
     fecha: {
       type: Date,
@@ -28,29 +34,42 @@ const reservationSchema = new mongoose.Schema(
     horaInicio: {
       type: String,
       required: [true, 'La hora de inicio es requerida'],
-      match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)'],
     },
 
-    horaFin: {
+    duracion: {
+      type: Number,
+      required: [true, 'La duracion es requerida'],
+      min: 1,
+      max: 4,
+    },
+
+    personas: {
+      type: Number,
+      required: [true, 'El numero de personas es requerido'],
+      min: 1,
+    },
+
+    proposito: {
       type: String,
-      required: [true, 'La hora de fin es requerida'],
-      match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)'],
+      required: [true, 'El proposito es requerido'],
+      trim: true,
     },
 
-   estado: {
-  type: String,
-  enum: [
-    'Pendiente',
-    'Aprobada',
-    'Rechazada',
-    'Cancelada',
-  ],
-  default: 'Pendiente',
-},
-
-    motivo: {
+    notas: {
       type: String,
       default: '',
+      trim: true,
+    },
+
+    precioTotal: {
+      type: Number,
+      default: 0,
+    },
+
+    estado: {
+      type: String,
+      enum: ['Pendiente', 'Aprobada', 'Rechazada', 'Cancelada'],
+      default: 'Pendiente',
     },
   },
   {
@@ -58,18 +77,16 @@ const reservationSchema = new mongoose.Schema(
       createdAt: 'creado_en',
       updatedAt: 'actualizado_en',
     },
+
     toJSON: {
-      transform: (doc, ret) => {
-        delete ret.__v;
+      transform: (_doc, ret) => {
         ret.id = ret._id;
         delete ret._id;
+        delete ret.__v;
         return ret;
       },
     },
   }
 );
-
-// Índice para detección rápida de cruces de horario
-reservationSchema.index({ parkId: 1, fecha: 1, horaInicio: 1, horaFin: 1 });
 
 module.exports = mongoose.model('Reservation', reservationSchema, 'reservas');

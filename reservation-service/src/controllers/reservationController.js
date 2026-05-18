@@ -1,329 +1,144 @@
-const Reservation = require("../models/Reservation");
+﻿const Reservation = require('../models/Reservation');
 
-const createReservation = async (
-  req,
-  res
-) => {
+const ALLOWED_FIELDS = [
+  'parkId',
+  'tipoEspacio',
+  'fecha',
+  'horaInicio',
+  'duracion',
+  'personas',
+  'proposito',
+  'notas',
+  'precioTotal',
+];
 
+const createReservation = async (req, res) => {
   try {
+    const body = {};
+    ALLOWED_FIELDS.forEach((f) => {
+      if (req.body[f] !== undefined) body[f] = req.body[f];
+    });
 
-    const {
-      parkId,
-      espacio,
-      fecha,
-      horaInicio,
-      horaFin,
-    } = req.body;
-
-    if (horaInicio >= horaFin) {
-
+    const missing = ['parkId', 'tipoEspacio', 'fecha', 'horaInicio', 'duracion', 'personas', 'proposito'].filter(
+      (f) => !body[f]
+    );
+    if (missing.length) {
       return res.status(400).json({
         success: false,
-        error:
-          "La hora de fin debe ser posterior a la hora de inicio",
+        error: `Campos requeridos faltantes: ${missing.join(', ')}`,
       });
     }
 
-    const conflicto =
-      await Reservation.findOne({
-
-        parkId,
-        espacio,
-        fecha,
-
-        $and: [
-          {
-            horaInicio: {
-              $lt: horaFin,
-            },
-          },
-          {
-            horaFin: {
-              $gt: horaInicio,
-            },
-          },
-        ],
-      });
-
-    if (conflicto) {
-
-      return res.status(409).json({
-        success: false,
-        error:
-          "Ya existe una reserva en ese horario para este espacio",
-      });
-    }
-
-    const reservation =
-      await Reservation.create({
-
-        userId:
-          req.user.userId,
-
-        parkId,
-        espacio,
-        fecha,
-        horaInicio,
-        horaFin,
-      });
+    const reservation = await Reservation.create({
+      userId: req.user.userId,
+      ...body,
+    });
 
     res.status(201).json({
-
       success: true,
-
-      message:
-        "Reserva creada correctamente",
-
+      message: 'Reserva creada correctamente. Pendiente de aprobacion.',
       data: reservation,
     });
-
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      const msgs = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({ success: false, error: msgs.join('. ') });
+    }
+    console.error('Error creando reserva:', error.message);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+};
 
-    console.error(
-      "Error creando reserva:",
-      error.message
+const getMyReservations = async (req, res) => {
+  try {
+    const reservations = await Reservation.find({ userId: req.user.userId }).sort({ creado_en: -1 });
+    res.json({ success: true, data: reservations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+const getAllReservations = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.estado) filter.estado = req.query.estado;
+    if (req.query.parkId) filter.parkId = req.query.parkId;
+
+    const reservations = await Reservation.find(filter).sort({ creado_en: -1 });
+    res.json({ success: true, data: reservations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+const approveReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findByIdAndUpdate(
+      req.params.id,
+      { estado: 'Aprobada' },
+      { new: true }
     );
 
-    res.status(500).json({
+    if (!reservation) {
+      return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+    }
 
-      success: false,
-
-      error:
-        "Error interno del servidor",
-    });
-  }
-};
-
-const getReservations = async (
-  req,
-  res
-) => {
-
-  try {
-
-    const reservations =
-      await Reservation.find();
-
-    res.json({
-
-      success: true,
-
-      data: reservations,
-    });
-
+    res.json({ success: true, message: 'Reserva aprobada', data: reservation });
   } catch (error) {
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-const getMyReservations = async (
-  req,
-  res
-) => {
-
+const rejectReservation = async (req, res) => {
   try {
-
-    const reservations =
-      await Reservation.find({
-
-        userId:
-          req.user.userId,
-      });
-
-    res.json({
-
-      success: true,
-
-      data: reservations,
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message,
-    });
-  }
-};
-
-const approveReservation = async (
-  req,
-  res
-) => {
-
-  try {
-
-    const reservation =
-      await Reservation.findByIdAndUpdate(
-
-        req.params.id,
-
-        {
-          estado: 'Aprobada',
-        },
-
-        {
-          new: true,
-        }
-      );
+    const reservation = await Reservation.findByIdAndUpdate(
+      req.params.id,
+      { estado: 'Rechazada' },
+      { new: true }
+    );
 
     if (!reservation) {
+      return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+    }
 
-      return res.status(404).json({
+    res.json({ success: true, message: 'Reserva rechazada', data: reservation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
+const cancelReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findOne({
+      _id: req.params.id,
+      userId: req.user.userId,
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+    }
+
+    if (['Aprobada', 'Rechazada', 'Cancelada'].includes(reservation.estado)) {
+      return res.status(400).json({
         success: false,
-
-        error:
-          'Reserva no encontrada',
+        error: `No se puede cancelar una reserva en estado "${reservation.estado}"`,
       });
     }
 
-    res.json({
+    reservation.estado = 'Cancelada';
+    await reservation.save();
 
-      success: true,
-
-      message:
-        'Reserva aprobada',
-
-      data: reservation,
-    });
-
+    res.json({ success: true, message: 'Reserva cancelada', data: reservation });
   } catch (error) {
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message,
-    });
-  }
-};
-
-const rejectReservation = async (
-  req,
-  res
-) => {
-
-  try {
-
-    const reservation =
-      await Reservation.findByIdAndUpdate(
-
-        req.params.id,
-
-        {
-          estado: 'Rechazada',
-        },
-
-        {
-          new: true,
-        }
-      );
-
-    if (!reservation) {
-
-      return res.status(404).json({
-
-        success: false,
-
-        error:
-          'Reserva no encontrada',
-      });
-    }
-
-    res.json({
-
-      success: true,
-
-      message:
-        'Reserva rechazada',
-
-      data: reservation,
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message,
-    });
-  }
-};
-
-const deleteReservation = async (
-  req,
-  res
-) => {
-
-  try {
-
-    const reservation =
-      await Reservation.findByIdAndUpdate(
-
-        req.params.id,
-
-        {
-          estado: 'Cancelada',
-        },
-
-        {
-          new: true,
-        }
-      );
-
-    if (!reservation) {
-
-      return res.status(404).json({
-
-        success: false,
-
-        error:
-          "Reserva no encontrada",
-      });
-    }
-
-    res.json({
-
-      success: true,
-
-      message:
-        "Reserva cancelada",
-
-      data: reservation,
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message,
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 module.exports = {
-
   createReservation,
-  getReservations,
   getMyReservations,
+  getAllReservations,
   approveReservation,
   rejectReservation,
-  deleteReservation,
+  cancelReservation,
 };
