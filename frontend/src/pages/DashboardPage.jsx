@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.jsx
 // BUCAPARK Dashboard — conectado al backend real
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,7 @@ import { parkService, eventService, reservationService } from '../api/services';
 import {
   TreePine, Calendar, AlertTriangle, MapPin, Plus, Bell, Search,
   LogOut, ChevronRight, TrendingUp, Users, Clock, CheckCircle2,
-  XCircle, MoreHorizontal, Filter, ArrowUpRight, Leaf, Sun, CloudRain, Wind,
+  MoreHorizontal, Filter, ArrowUpRight, Leaf,
 } from 'lucide-react';
 
 // ─── Textos editables ─────────────────────────────────────────────────────────
@@ -123,17 +123,6 @@ const ACTIONS = [
   },
 ];
 
-// ─── Actividad reciente (mock) ────────────────────────────────────────────────
-// TODO: Conectar a un endpoint real cuando exista.
-// Por ahora sirve como demo visual.
-const MOCK_ACTIVITY = [
-  { id: 1, texto: 'Nueva reserva confirmada en San Pío', tiempo: '2 min', icon: Calendar, color: '#8bc34a' },
-  { id: 2, texto: 'Reporte: banco roto en La Flora', tiempo: '15 min', icon: AlertTriangle, color: '#ff9800' },
-  { id: 3, texto: 'Evento "Yoga al amanecer" confirmado', tiempo: '1 h', icon: CheckCircle2, color: '#4caf50' },
-  { id: 4, texto: 'Cancelación: reserva #452 en Girón', tiempo: '2 h', icon: XCircle, color: '#f44336' },
-  { id: 5, texto: 'Mantenimiento programado: Acuarela', tiempo: '3 h', icon: Clock, color: '#607d8b' },
-];
-
 // ─── Tabs de filtro ───────────────────────────────────────────────────────────
 const TAB_OPTIONS = [
   { key: 'todos', label: TEXTS.tabAll },
@@ -155,11 +144,7 @@ const mapPark = (park, index) => ({
   direccion: park.direccion || 'Bucaramanga',
   ciudad: park.ciudad || '',
   estado: (park.estado || 'activo').toLowerCase(),
-  ocupacion: 0,
   capacidad: park.capacidad || 100,
-  reservasHoy: 0,
-  clima: 'soleado',
-  temp: 24,
   imagen: PARK_COLORS[index % PARK_COLORS.length],
 });
 
@@ -193,13 +178,6 @@ const mapEvent = (event, index, parkNameById = {}) => ({
 });
 
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
-
-const WeatherIcon = ({ clima }) => {
-  if (clima === 'soleado') return <Sun className="h-4 w-4 text-[#ffd54f]" />;
-  if (clima === 'lluvia') return <CloudRain className="h-4 w-4 text-[#42a5f5]" />;
-  if (clima === 'nublado') return <CloudRain className="h-4 w-4 text-[#90a4ae]" />;
-  return <Wind className="h-4 w-4 text-[#a8b5a0]" />;
-};
 
 const StatusBadge = ({ estado }) => {
   const styles = {
@@ -238,7 +216,6 @@ const DashboardPage = () => {
     avatar:    user?.nombre
       ? user.nombre.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
       : 'U',
-    notificaciones: 3, // mock — no hay endpoint de notificaciones aún
   };
 
   const handleLogout = () => {
@@ -253,7 +230,7 @@ const DashboardPage = () => {
   const [eventsLoading,setEventsLoading]= useState(true);
   const [myReservationsLoading, setMyReservationsLoading] = useState(true);
   const [parksError,   setParksError]   = useState(null);
-  const [myReservationsCount, setMyReservationsCount] = useState(null);
+  const [myReservations, setMyReservations] = useState([]);
   const [activeTab,    setActiveTab]    = useState('todos');
   const [searchOpen,   setSearchOpen]   = useState(false);
 
@@ -294,11 +271,10 @@ const DashboardPage = () => {
     try {
       const res = await reservationService.getMine();
       const data = res.data?.data ?? res.data ?? [];
-      setMyReservationsCount(Array.isArray(data) ? data.length : 0);
+      setMyReservations(Array.isArray(data) ? data : []);
     } catch (err) {
-      // TODO: Si el endpoint deja de estar disponible, mantener fallback mock.
       console.warn('Dashboard — no se pudieron cargar mis reservas:', err);
-      setMyReservationsCount(null);
+      setMyReservations([]);
     } finally {
       setMyReservationsLoading(false);
     }
@@ -337,11 +313,35 @@ const DashboardPage = () => {
       ? parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length
       : cfg.key === 'eventos'
       ? events.length
-      : cfg.key === 'reservas' && Number.isFinite(myReservationsCount)
-      ? myReservationsCount
+      : cfg.key === 'reservas'
+      ? myReservations.length
       : cfg.mockValue,
     trend: cfg.mockTrend,
   }));
+
+  // Actividad derivada de eventos reales + reservas del usuario
+  const activityItems = useMemo(() => {
+    const items = [];
+    events.slice(0, 3).forEach((ev, i) => {
+      items.push({
+        id: `ev-${ev._id || i}`,
+        texto: ev.nombre || 'Evento',
+        tiempo: formatEventDate(ev.fecha),
+        icon: Calendar,
+        color: EVENT_COLORS[i % EVENT_COLORS.length],
+      });
+    });
+    myReservations.slice(0, 3).forEach((res, i) => {
+      items.push({
+        id: `res-${res._id || i}`,
+        texto: `Reserva: ${res.espacio || res.parkId || 'espacio'}`,
+        tiempo: res.fecha ? formatEventDate(res.fecha) : 'Reciente',
+        icon: CheckCircle2,
+        color: '#8bc34a',
+      });
+    });
+    return items.slice(0, 5);
+  }, [events, myReservations]);
 
   // Mes y año actuales para el mini-calendario
   const now = new Date();
@@ -405,14 +405,9 @@ const DashboardPage = () => {
                 <Search className="h-5 w-5 text-[#5a6b5f]" />
               </button>
 
-              {/* Notificaciones (mock count) */}
-              <button className="p-2 hover:bg-[#f8faf6] rounded-lg transition-colors relative" aria-label="Notificaciones">
+              {/* Notificaciones */}
+              <button className="p-2 hover:bg-[#f8faf6] rounded-lg transition-colors" aria-label="Notificaciones">
                 <Bell className="h-5 w-5 text-[#5a6b5f]" />
-                {userDisplay.notificaciones > 0 && (
-                  <span className="absolute top-1 right-1 h-4 w-4 bg-[#ff5722] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {userDisplay.notificaciones}
-                  </span>
-                )}
               </button>
 
               {/* Avatar + logout */}
@@ -639,10 +634,6 @@ const DashboardPage = () => {
                               <div className="absolute top-4 left-4">
                                 <StatusBadge estado={parque.estado} />
                               </div>
-                              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1">
-                                <WeatherIcon clima={parque.clima} />
-                                <span className="text-xs font-bold">{parque.temp}°</span>
-                              </div>
                             </div>
 
                             <div className="p-4">
@@ -661,34 +652,10 @@ const DashboardPage = () => {
                                 </Link>
                               </div>
 
-                              {/* Barra de ocupación (placeholder visual) */}
-                              <div className="mt-4">
-                                <div className="flex items-center justify-between text-xs mb-1.5">
-                                  <span className="text-[#5a6b5f] font-medium">Ocupación</span>
-                                  <span className="font-bold text-[#1a332a]">{parque.ocupacion}%</span>
-                                </div>
-                                <div className="h-2 bg-[#f8faf6] rounded-full overflow-hidden">
-                                  <motion.div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      backgroundColor:
-                                        parque.ocupacion > 80 ? '#ff5722'
-                                        : parque.ocupacion > 50 ? '#ff9800'
-                                        : '#8bc34a',
-                                    }}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${parque.ocupacion}%` }}
-                                    transition={{ duration: 1, delay: 0.3 }}
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#f8faf6]">
-                                  <span className="text-xs text-[#a8b5a0]">
-                                    {parque.reservasHoy} reservas hoy
-                                  </span>
-                                  <span className="text-xs font-bold text-[#5a6b5f]">
-                                    Cap: {parque.capacidad}
-                                  </span>
-                                </div>
+                              <div className="mt-4 pt-3 border-t border-[#f8faf6]">
+                                <span className="text-xs font-bold text-[#5a6b5f]">
+                                  Capacidad: {parque.capacidad}
+                                </span>
                               </div>
                             </div>
                           </motion.div>
@@ -784,32 +751,49 @@ const DashboardPage = () => {
           {/* ── Columna derecha: actividad + acciones + calendario ── */}
           <div className="space-y-8">
 
-            {/* Actividad reciente (mock hasta que exista endpoint) */}
+            {/* Actividad reciente */}
             <section>
               <h2 className="text-xl font-black mb-5">{TEXTS.activitySection}</h2>
               <div className="bg-white rounded-2xl border border-[#e0e8db] p-4">
-                {MOCK_ACTIVITY.map((act, i) => (
-                  <motion.div
-                    key={act.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: i * 0.08 }}
-                    className={`flex items-start gap-3 py-3 ${
-                      i !== MOCK_ACTIVITY.length - 1 ? 'border-b border-[#f8faf6]' : ''
-                    }`}
-                  >
-                    <div
-                      className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${act.color}15` }}
+                {eventsLoading || myReservationsLoading ? (
+                  [1, 2, 3].map((n) => (
+                    <div key={n} className="flex items-center gap-3 py-3 border-b border-[#f8faf6] last:border-0">
+                      <motion.div className="h-8 w-8 bg-[#e8ece4] rounded-lg flex-shrink-0"
+                        animate={{ opacity: [0.4, 0.7, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: n * 0.1 }}
+                      />
+                      <motion.div className="h-4 bg-[#e8ece4] rounded w-3/4"
+                        animate={{ opacity: [0.4, 0.6, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: n * 0.1 + 0.1 }}
+                      />
+                    </div>
+                  ))
+                ) : activityItems.length === 0 ? (
+                  <p className="text-[#a8b5a0] text-sm py-6 text-center">{TEXTS.heroFallbackDesc}</p>
+                ) : (
+                  activityItems.map((act, i) => (
+                    <motion.div
+                      key={act.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: i * 0.08 }}
+                      className={`flex items-start gap-3 py-3 ${
+                        i !== activityItems.length - 1 ? 'border-b border-[#f8faf6]' : ''
+                      }`}
                     >
-                      <act.icon className="h-4 w-4" style={{ color: act.color }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#1a332a] leading-snug">{act.texto}</p>
-                      <p className="text-xs text-[#a8b5a0] mt-1">{act.tiempo}</p>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div
+                        className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                        style={{ backgroundColor: `${act.color}15` }}
+                      >
+                        <act.icon className="h-4 w-4" style={{ color: act.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#1a332a] leading-snug">{act.texto}</p>
+                        <p className="text-xs text-[#a8b5a0] mt-1">{act.tiempo}</p>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
               </div>
             </section>
 
