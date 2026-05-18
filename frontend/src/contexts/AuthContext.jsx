@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true); // true mientras hidrata desde localStorage
 
-  // Hidrata sesión al montar — valida el token contra el backend
+  // Hidrata sesión al montar — dos fases para no bloquear la UI
   useEffect(() => {
     const hydrate = async () => {
       const storedToken = localStorage.getItem(TOKEN_KEY);
@@ -30,36 +30,46 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      console.log('[AUTH] token encontrado');
+      // Expiración local — descarta inmediatamente sin llamar al backend
+      if (isTokenExpired(storedToken)) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setLoading(false);
+        return;
+      }
 
+      // FASE 1: restaurar desde caché → UI se muestra de inmediato
+      console.log('[AUTH] token encontrado');
+      const raw = localStorage.getItem(USER_KEY);
+      if (raw) {
+        try {
+          setToken(storedToken);
+          setUser(JSON.parse(raw));
+        } catch {
+          localStorage.removeItem(USER_KEY);
+        }
+      }
+      setLoading(false); // renderiza sin esperar al backend
+
+      // FASE 2: validar contra el backend en segundo plano (no bloquea)
       try {
         const res = await authService.me();
-        // getMe devuelve { data: { user: {...} } } — aplanar para consistencia con login/register
         const userData = res.data?.data?.user || res.data?.data || res.data || null;
-        console.log('[AUTH] usuario recuperado', userData);
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
-        setToken(storedToken);
-        setUser(userData);
+        if (userData) {
+          console.log('[AUTH] usuario recuperado', userData);
+          localStorage.setItem(USER_KEY, JSON.stringify(userData));
+          setUser(userData);
+        }
       } catch (err) {
         if (err.response?.status === 401) {
+          // Token rechazado por el backend — limpiar sesión
           console.log('[AUTH] token inválido');
-          // El interceptor de axiosClient ya limpió el localStorage
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
           setToken(null);
           setUser(null);
-        } else {
-          // Backend no disponible — fallback al usuario cacheado
-          const raw = localStorage.getItem(USER_KEY);
-          if (raw) {
-            try {
-              setToken(storedToken);
-              setUser(JSON.parse(raw));
-            } catch {
-              localStorage.removeItem(USER_KEY);
-            }
-          }
         }
-      } finally {
-        setLoading(false);
+        // Otros errores (red, backend durmiendo): mantener sesión del caché
       }
     };
 
