@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AppHeader from '../components/AppHeader';
+import AdminRoute from '../components/AdminRoute';
 
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
@@ -100,6 +101,8 @@ function AppRouter() {
             </PrivateRoute>
           }
         />
+
+        {/* futuras rutas administrativas — usar <AdminRoute> como wrapper */}
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
