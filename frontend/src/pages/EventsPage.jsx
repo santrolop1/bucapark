@@ -91,243 +91,7 @@ const CATEGORIES = [
   { id: 'social', label: 'Social', icon: Users, color: '#9c27b0' },
 ];
 
-// --- Evento destacado (fácil de editar) ---
-// TODO: Reemplazar por evento destacado real cuando exista endpoint/backend.
-const FEATURED_EVENT = {
-  id: 0,
-  nombre: 'Festival de Verano Bucaramanga',
-  descripcion: 'El evento más grande del año. Música en vivo, food trucks, actividades para toda la familia y espectáculos de drones al cierre.',
-  fecha: 'Sáb 20 de Julio',
-  hora: '2:00 PM - 10:00 PM',
-  parque: 'Parque San Pío',
-  direccion: 'Carrera 27 #45-67, Centro',
-  categoria: 'social',
-  categoriaLabel: 'Social',
-  categoriaColor: '#9c27b0',
-  asistentes: 342,
-  maxAsistentes: 500,
-  estado: 'confirmado', // confirmado | pendiente | cancelado | completo
-  estadoLabel: 'Confirmado',
-  organizador: 'Alcaldía de Bucaramanga',
-  precio: 'Gratuito',
-  destacado: true,
-  imagenColor: 'bg-[#2d4a3e]',
-};
-
-// --- Eventos (fácil de editar) ---
-// TODO: Reemplazar por eventos reales al integrar con events-service.
-const EVENTS = [
-  {
-    id: 1,
-    nombre: 'Yoga al amanecer',
-    descripcion: 'Sesión de yoga y meditación al aire libre. Traé tu mat y agua.',
-    fecha: 'Hoy',
-    fechaCompleta: '2024-07-15',
-    hora: '6:00 AM',
-    duracion: '1h 30min',
-    parque: 'Parque San Pío',
-    categoria: 'naturaleza',
-    categoriaLabel: 'Naturaleza',
-    categoriaColor: '#4caf50',
-    asistentes: 24,
-    maxAsistentes: 30,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Comunidad Zen Bucaramanga',
-    precio: 'Gratuito',
-    imagenColor: 'bg-[#4a6741]',
-    popular: true,
-  },
-  {
-    id: 2,
-    nombre: 'Torneo Barrial Fútbol',
-    descripcion: 'Cuadrangular de barrios. Entrada libre para espectadores.',
-    fecha: 'Mañana',
-    fechaCompleta: '2024-07-16',
-    hora: '8:00 AM',
-    duracion: '4h',
-    parque: 'Parque de los Niños',
-    categoria: 'deporte',
-    categoriaLabel: 'Deporte',
-    categoriaColor: '#8bc34a',
-    asistentes: 156,
-    maxAsistentes: 200,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Liga de Fútbol Amateur',
-    precio: '$5.000',
-    imagenColor: 'bg-[#5a7a6b]',
-    popular: true,
-  },
-  {
-    id: 3,
-    nombre: 'Cine bajo las estrellas',
-    descripcion: 'Proyección de "El Abrazo de la Serpiente". Traé silla o manta.',
-    fecha: 'Vie 19',
-    fechaCompleta: '2024-07-19',
-    hora: '7:00 PM',
-    duracion: '2h 30min',
-    parque: 'Parque del Agua',
-    categoria: 'cultura',
-    categoriaLabel: 'Cultura',
-    categoriaColor: '#ff9800',
-    asistentes: 89,
-    maxAsistentes: 150,
-    estado: 'pendiente',
-    estadoLabel: 'Pendiente',
-    organizador: 'CineClub Bucaramanga',
-    precio: 'Gratuito',
-    imagenColor: 'bg-[#6b8a7a]',
-    popular: false,
-  },
-  {
-    id: 4,
-    nombre: 'Clase de pintura al aire libre',
-    descripcion: 'Taller introductorio de acuarela. Materiales incluidos.',
-    fecha: 'Sáb 20',
-    fechaCompleta: '2024-07-20',
-    hora: '9:00 AM',
-    duracion: '3h',
-    parque: 'Parque San Pío',
-    categoria: 'cultura',
-    categoriaLabel: 'Cultura',
-    categoriaColor: '#ff9800',
-    asistentes: 12,
-    maxAsistentes: 20,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Escuela de Artes Visuales',
-    precio: '$15.000',
-    imagenColor: 'bg-[#4a5d41]',
-    popular: false,
-  },
-  {
-    id: 5,
-    nombre: 'Maratón 5K Nocturna',
-    descripcion: 'Carrera nocturna por el centro de la ciudad. Incluye medalla.',
-    fecha: 'Sáb 20',
-    fechaCompleta: '2024-07-20',
-    hora: '7:00 PM',
-    duracion: '2h',
-    parque: 'Parque del Agua',
-    categoria: 'deporte',
-    categoriaLabel: 'Deporte',
-    categoriaColor: '#8bc34a',
-    asistentes: 234,
-    maxAsistentes: 300,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Runners Bucaramanga',
-    precio: '$25.000',
-    imagenColor: 'bg-[#5a6b4a]',
-    popular: true,
-  },
-  {
-    id: 6,
-    nombre: 'Concierto de Jazz',
-    descripcion: 'Noche de jazz con artistas locales. Traé tu bebida.',
-    fecha: 'Dom 21',
-    fechaCompleta: '2024-07-21',
-    hora: '6:00 PM',
-    duracion: '3h',
-    parque: 'Parque de los Niños',
-    categoria: 'musica',
-    categoriaLabel: 'Música',
-    categoriaColor: '#e91e63',
-    asistentes: 67,
-    maxAsistentes: 100,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Jazz Club Bucaramanga',
-    precio: '$10.000',
-    imagenColor: 'bg-[#6b7a5b]',
-    popular: false,
-  },
-  {
-    id: 7,
-    nombre: 'Taller de jardinería urbana',
-    descripcion: 'Aprendé a crear tu huerta en casa. Plantines incluidos.',
-    fecha: 'Lun 22',
-    fechaCompleta: '2024-07-22',
-    hora: '10:00 AM',
-    duracion: '2h',
-    parque: 'Parque San Pío',
-    categoria: 'educacion',
-    categoriaLabel: 'Educación',
-    categoriaColor: '#2196f3',
-    asistentes: 18,
-    maxAsistentes: 25,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Huertas Urbanas BGA',
-    precio: '$8.000',
-    imagenColor: 'bg-[#4a6741]',
-    popular: false,
-  },
-  {
-    id: 8,
-    nombre: 'Encuentro de lectura',
-    descripcion: 'Lectura compartida de poesía colombiana. Café incluido.',
-    fecha: 'Mar 23',
-    fechaCompleta: '2024-07-23',
-    hora: '4:00 PM',
-    duracion: '2h',
-    parque: 'Parque del Agua',
-    categoria: 'educacion',
-    categoriaLabel: 'Educación',
-    categoriaColor: '#2196f3',
-    asistentes: 15,
-    maxAsistentes: 30,
-    estado: 'pendiente',
-    estadoLabel: 'Pendiente',
-    organizador: 'Biblioteca Pública',
-    precio: 'Gratuito',
-    imagenColor: 'bg-[#5a7a6b]',
-    popular: false,
-  },
-  {
-    id: 9,
-    nombre: 'Zumba en el parque',
-    descripcion: 'Clase masiva de zumba al aire libre. Traé tu botella.',
-    fecha: 'Mié 24',
-    fechaCompleta: '2024-07-24',
-    hora: '6:00 PM',
-    duracion: '1h',
-    parque: 'Parque de los Niños',
-    categoria: 'deporte',
-    categoriaLabel: 'Deporte',
-    categoriaColor: '#8bc34a',
-    asistentes: 45,
-    maxAsistentes: 60,
-    estado: 'confirmado',
-    estadoLabel: 'Confirmado',
-    organizador: 'Zumba BGA Fitness',
-    precio: 'Gratuito',
-    imagenColor: 'bg-[#6b8a7a]',
-    popular: true,
-  },
-];
-
-// --- Estadísticas (fácil de editar) ---
-// TODO: Reemplazar por métricas reales cuando exista endpoint agregado de eventos.
-const STATS = [
-  { label: 'Eventos este mes', value: 24, icon: Calendar, color: '#2d4a3e' },
-  { label: 'Asistentes hoy', value: 342, icon: Users, color: '#8bc34a' },
-  { label: 'Eventos gratuitos', value: 12, icon: Sparkles, color: '#ff9800' },
-  { label: 'Parques activos', value: 5, icon: MapPin, color: '#2196f3' },
-];
-
-// --- Días del mini calendario (fácil de editar) ---
-// TODO: Reemplazar por agenda real al conectar calendario de eventos.
-const CALENDAR_DAYS = [
-  { day: 'Lun', date: '15', active: true, events: 2 },
-  { day: 'Mar', date: '16', active: false, events: 1 },
-  { day: 'Mié', date: '17', active: false, events: 0 },
-  { day: 'Jue', date: '18', active: false, events: 0 },
-  { day: 'Vie', date: '19', active: false, events: 1 },
-  { day: 'Sáb', date: '20', active: false, events: 3 },
-  { day: 'Dom', date: '21', active: false, events: 1 },
-];
+// (datos mock eliminados — todo viene del backend)
 
 // ============================================================
 // 2. COMPONENTES AUXILIARES - Pequeños y reutilizables
@@ -471,15 +235,59 @@ export default function EventsPage() {
   }, []);
 
   useEffect(() => {
-    loadEvents();
+    const timer = setTimeout(loadEvents, 0);
+    return () => clearTimeout(timer);
   }, [loadEvents]);
 
-  // Usa eventos reales si la API respondió; fallback al mock SOLO si falla la API (null).
-  // Cuando la API responde vacío (apiEvents.length === 0) se muestra estado vacío real, no datos falsos.
+  // Eventos reales; si la API falla muestra estado vacío — nunca datos inventados.
   const activeEvents = useMemo(() => {
-    if (apiEvents === null) return EVENTS;
+    if (!Array.isArray(apiEvents)) return [];
     return apiEvents.map(mapApiEvent);
   }, [apiEvents]);
+
+  // Primer evento de la lista como "destacado"
+  const featuredEvent = activeEvents.length > 0 ? activeEvents[0] : null;
+
+  // Estadísticas calculadas desde los datos reales
+  const computedStats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear  = now.getFullYear();
+    const enMes   = activeEvents.filter((e) => {
+      if (!e.fechaCompleta) return false;
+      const d = new Date(e.fechaCompleta);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    }).length;
+    const gratuitos   = activeEvents.filter((e) => !e.precio || e.precio === 'Gratuito').length;
+    const asistentes  = activeEvents.reduce((acc, e) => acc + (Number(e.asistentes) || 0), 0);
+    const parquesSet  = new Set(activeEvents.map((e) => e.parque).filter(Boolean));
+    return [
+      { label: 'Eventos este mes',  value: enMes || activeEvents.length, icon: Calendar, color: '#2d4a3e' },
+      { label: 'Asistentes totales', value: asistentes,                  icon: Users,    color: '#8bc34a' },
+      { label: 'Eventos gratuitos', value: gratuitos,                    icon: Sparkles, color: '#ff9800' },
+      { label: 'Parques con eventos', value: parquesSet.size,            icon: MapPin,   color: '#2196f3' },
+    ];
+  }, [activeEvents]);
+
+  // Próximos 7 días con conteo real de eventos
+  const calendarDays = useMemo(() => {
+    const today = new Date();
+    const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const count = activeEvents.filter((e) => {
+        if (!e.fechaCompleta) return false;
+        return new Date(e.fechaCompleta).toDateString() === date.toDateString();
+      }).length;
+      return {
+        day:    SHORT_DAYS[date.getDay()],
+        date:   String(date.getDate()),
+        active: i === 0,
+        events: count,
+      };
+    });
+  }, [activeEvents]);
 
   // Evita uso directo de window.innerWidth en render.
   useEffect(() => {
@@ -538,8 +346,6 @@ export default function EventsPage() {
     }
 
     return result;
-  // activeEvents DEBE estar en el array de deps — si no, es stale closure
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeEvents, activeCategory, activeFilter, searchQuery]);
 
   // Toggle like
@@ -570,10 +376,9 @@ export default function EventsPage() {
     return attendees >= maxAttendees;
   };
 
-  const featuredSpotsLeft = Math.max(
-    (Number(FEATURED_EVENT?.maxAsistentes) || 0) - (Number(FEATURED_EVENT?.asistentes) || 0),
-    0
-  );
+  const featuredSpotsLeft = featuredEvent
+    ? Math.max((Number(featuredEvent.maxAsistentes) || 0) - (Number(featuredEvent.asistentes) || 0), 0)
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#f4f7f0] text-[#1a332a]">
@@ -627,7 +432,7 @@ export default function EventsPage() {
 
             {/* Stats rápidos en el header */}
             <div className="flex gap-4 flex-wrap">
-              {STATS.slice(0, 3).map((stat, i) => (
+              {computedStats.slice(0, 3).map((stat, i) => (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -737,7 +542,7 @@ export default function EventsPage() {
         {/* ============================================
             EVENTO DESTACADO
         ============================================ */}
-        {!isLoading && filteredEvents.length > 0 && !searchQuery && activeCategory === 'all' && activeFilter === 'all' && (
+        {!isLoading && featuredEvent && !searchQuery && activeCategory === 'all' && activeFilter === 'all' && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -752,19 +557,19 @@ export default function EventsPage() {
             <div className="bg-white rounded-3xl border border-[#e0e8db] overflow-hidden shadow-lg shadow-[#2d4a3e]/5">
               <div className="grid lg:grid-cols-2">
                 {/* Imagen placeholder */}
-                <div className={`${FEATURED_EVENT.imagenColor} h-64 lg:h-auto flex items-center justify-center relative`}>
+                <div className={`${featuredEvent.imagenColor} h-64 lg:h-auto flex items-center justify-center relative`}>
                   <TreePine className="h-32 w-32 text-white opacity-20" />
                   <div className="absolute top-4 left-4">
-                    <CategoryBadge color={FEATURED_EVENT.categoriaColor} label={FEATURED_EVENT.categoriaLabel} />
+                    <CategoryBadge color={featuredEvent.categoriaColor} label={featuredEvent.categoriaLabel} />
                   </div>
                   <div className="absolute top-4 right-4 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => toggleLike(FEATURED_EVENT.id)}
+                      onClick={() => toggleLike(featuredEvent.id)}
                       className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 hover:bg-white transition-colors"
                     >
                       <Heart
-                        className={`h-5 w-5 transition-colors ${likedEvents.has(FEATURED_EVENT.id) ? 'text-red-500 fill-red-500' : 'text-[#2d4a3e]'}`}
+                        className={`h-5 w-5 transition-colors ${likedEvents.has(featuredEvent.id) ? 'text-red-500 fill-red-500' : 'text-[#2d4a3e]'}`}
                       />
                     </button>
                     <button type="button" className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 hover:bg-white transition-colors">
@@ -775,36 +580,35 @@ export default function EventsPage() {
 
                 {/* Info */}
                 <div className="p-6 lg:p-8 flex flex-col justify-center">
-                  <StatusBadge estado={FEATURED_EVENT.estado} label={FEATURED_EVENT.estadoLabel} />
+                  <StatusBadge estado={featuredEvent.estado} label={featuredEvent.estadoLabel} />
 
-                  <h3 className="text-2xl lg:text-3xl font-black mt-3 mb-2">{FEATURED_EVENT.nombre}</h3>
-                  <p className="text-[#5a6b5f] mb-4 leading-relaxed">{FEATURED_EVENT.descripcion}</p>
+                  <h3 className="text-2xl lg:text-3xl font-black mt-3 mb-2">{featuredEvent.nombre}</h3>
+                  <p className="text-[#5a6b5f] mb-4 leading-relaxed">{featuredEvent.descripcion}</p>
 
                   <div className="space-y-2 mb-5">
                     <div className="flex items-center gap-2 text-sm text-[#5a6b5f]">
                       <Calendar className="h-4 w-4 text-[#8bc34a]" />
-                      <span className="font-medium">{FEATURED_EVENT.fecha}</span>
+                      <span className="font-medium">{featuredEvent.fecha}</span>
                       <span className="text-[#a8b5a0]">·</span>
                       <Clock className="h-4 w-4 text-[#8bc34a]" />
-                      <span>{FEATURED_EVENT.hora}</span>
+                      <span>{featuredEvent.hora}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[#5a6b5f]">
                       <MapPin className="h-4 w-4 text-[#8bc34a]" />
-                      <span>{FEATURED_EVENT.parque}</span>
-                      <span className="text-[#a8b5a0] text-xs">{FEATURED_EVENT.direccion}</span>
+                      <span>{featuredEvent.parque}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[#5a6b5f]">
                       <Users className="h-4 w-4 text-[#8bc34a]" />
-                      <span className="font-medium">{FEATURED_EVENT.asistentes}</span>
-                      <span className="text-[#a8b5a0]">/ {FEATURED_EVENT.maxAsistentes} {TEXTS.attendeesLabel}</span>
+                      <span className="font-medium">{featuredEvent.asistentes}</span>
+                      <span className="text-[#a8b5a0]">/ {featuredEvent.maxAsistentes} {TEXTS.attendeesLabel}</span>
                     </div>
                   </div>
 
                   {/* Progress de cupos */}
                   <div className="mb-5">
                     <ProgressBar
-                      value={FEATURED_EVENT.asistentes}
-                      max={FEATURED_EVENT.maxAsistentes}
+                      value={featuredEvent.asistentes}
+                      max={featuredEvent.maxAsistentes}
                       color="#8bc34a"
                     />
                     <p className="text-xs text-[#a8b5a0] mt-1">
@@ -817,23 +621,23 @@ export default function EventsPage() {
                       type="button"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleAttend(FEATURED_EVENT.id)}
+                      onClick={() => toggleAttend(featuredEvent.id)}
                       className={`flex-1 py-3.5 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${
-                        attendingEvents.has(FEATURED_EVENT.id)
+                        attendingEvents.has(featuredEvent.id)
                           ? 'bg-[#8bc34a] text-[#1a332a]'
                           : 'bg-[#2d4a3e] text-white hover:bg-[#1a332a] shadow-lg shadow-[#2d4a3e]/20'
                       }`}
                     >
                       <CheckCircle2 className="h-4 w-4" />
-                      {attendingEvents.has(FEATURED_EVENT.id) ? TEXTS.attendingButton : TEXTS.attendButton}
+                      {attendingEvents.has(featuredEvent.id) ? TEXTS.attendingButton : TEXTS.attendButton}
                     </motion.button>
                     <span className="px-4 py-3.5 bg-[#f8faf6] rounded-xl text-sm font-bold text-[#2d4a3e]">
-                      {FEATURED_EVENT.precio}
+                      {featuredEvent.precio}
                     </span>
                   </div>
 
                   <p className="text-xs text-[#a8b5a0] mt-3">
-                    {TEXTS.organizerLabel}: <span className="text-[#5a6b5f] font-medium">{FEATURED_EVENT.organizador}</span>
+                    {TEXTS.organizerLabel}: <span className="text-[#5a6b5f] font-medium">{featuredEvent.organizador}</span>
                   </p>
                 </div>
               </div>
@@ -1022,7 +826,7 @@ export default function EventsPage() {
                 Próximos días
               </h3>
               <div className="space-y-2">
-                {CALENDAR_DAYS.map((day, i) => (
+                {calendarDays.map((day, i) => (
                   <motion.div
                     key={day.date}
                     initial={{ opacity: 0, x: 10 }}
@@ -1061,7 +865,7 @@ export default function EventsPage() {
                 {TEXTS.statsTitle}
               </h3>
               <div className="space-y-4">
-                {STATS.map((stat, i) => (
+                {computedStats.map((stat, i) => (
                   <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, x: 20 }}
