@@ -34,8 +34,9 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const res = await authService.me();
-        const userData = res.data?.data || res.data;
-        console.log('[AUTH] usuario recuperado');
+        // getMe devuelve { data: { user: {...} } } — aplanar para consistencia con login/register
+        const userData = res.data?.data?.user || res.data?.data || res.data || null;
+        console.log('[AUTH] usuario recuperado', userData);
         localStorage.setItem(USER_KEY, JSON.stringify(userData));
         setToken(storedToken);
         setUser(userData);
