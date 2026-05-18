@@ -20,22 +20,49 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true); // true mientras hidrata desde localStorage
 
-  // Hidrata sesión al montar
+  // Hidrata sesión al montar — valida el token contra el backend
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
+    const hydrate = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
 
-    if (storedToken && storedUser) {
-      if (isTokenExpired(storedToken)) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-      } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+      if (!storedToken) {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
+
+      console.log('[AUTH] token encontrado');
+
+      try {
+        const res = await authService.me();
+        const userData = res.data?.data || res.data;
+        console.log('[AUTH] usuario recuperado');
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        setToken(storedToken);
+        setUser(userData);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          console.log('[AUTH] token inválido');
+          // El interceptor de axiosClient ya limpió el localStorage
+          setToken(null);
+          setUser(null);
+        } else {
+          // Backend no disponible — fallback al usuario cacheado
+          const raw = localStorage.getItem(USER_KEY);
+          if (raw) {
+            try {
+              setToken(storedToken);
+              setUser(JSON.parse(raw));
+            } catch {
+              localStorage.removeItem(USER_KEY);
+            }
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    hydrate();
   }, []);
 
   const _saveSession = useCallback((newToken, newUser) => {
