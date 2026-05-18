@@ -147,7 +147,12 @@ const HomePage = () => {
           activeParks: list.filter((park) => (park?.estado || '').toLowerCase() === 'activo').length,
         }));
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[PARKS ERROR]', {
+          status: error?.response?.status,
+          data: error?.response?.data,
+          message: error?.message,
+        });
         setError(PARKS_SECTION.errorMsg);
         setParks([]);
       })

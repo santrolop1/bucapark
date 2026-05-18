@@ -120,9 +120,13 @@ const ParksPage = () => {
       // El backend devuelve { success: true, data: [...] }
       const data = res.data?.data ?? res.data ?? [];
       setParks(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch (error) {
+      console.error('[PARKS ERROR]', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
       setError(TEXTS.errorMsg);
-      console.error(err);
     } finally {
       setLoading(false);
     }
