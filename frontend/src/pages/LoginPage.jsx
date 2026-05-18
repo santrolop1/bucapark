@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -48,13 +48,20 @@ const friendlyError = (err) => {
   return BACKEND_ERRORS[msg] || msg || 'Email o contraseña incorrectos.';
 };
 
+const RETRY_DELAY_MS = 8000;
+const MAX_RETRIES    = 4;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [focusedField, setFocusedField] = useState(null);
+  const abortRef = useRef(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -64,6 +71,7 @@ const LoginPage = () => {
   // Autofocus en email al montar
   useEffect(() => {
     emailRef.current?.focus();
+    return () => { abortRef.current = true; }; // cancela reintentos si desmonta
   }, []);
 
   const handleChange = (e) => {
@@ -71,9 +79,9 @@ const LoginPage = () => {
     if (error) setError('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (loading) return; // evita doble submit
+    if (loading) return;
 
     if (!formData.email.trim() || !formData.password) {
       setError('Completá el email y la contraseña.');
@@ -82,21 +90,39 @@ const LoginPage = () => {
 
     setError('');
     setLoading(true);
+    setRetryCount(0);
+    abortRef.current = false;
 
-    try {
-      await login(formData);
-      // Redirige a la página que intentaba visitar, incluyendo query/hash.
-      const fromState = location.state?.from;
-      const from = fromState
-        ? `${fromState.pathname || '/dashboard'}${fromState.search || ''}${fromState.hash || ''}`
-        : '/dashboard';
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError(friendlyError(err));
-    } finally {
-      setLoading(false);
+    let lastErr;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (abortRef.current) break;
+      try {
+        await login(formData);
+        const fromState = location.state?.from;
+        const from = fromState
+          ? `${fromState.pathname || '/dashboard'}${fromState.search || ''}${fromState.hash || ''}`
+          : '/dashboard';
+        navigate(from, { replace: true });
+        return;
+      } catch (err) {
+        lastErr = err;
+        const is502 = !err.response || err.response?.status === 502 || err.response?.status === 503;
+        if (is502 && attempt < MAX_RETRIES) {
+          setRetryCount(attempt + 1);
+          setError(`El servidor está despertando... reintentando (${attempt + 1}/${MAX_RETRIES})`);
+          await sleep(RETRY_DELAY_MS);
+          continue;
+        }
+        break;
+      }
     }
-  };
+
+    if (!abortRef.current) {
+      setError(friendlyError(lastErr));
+      setLoading(false);
+      setRetryCount(0);
+    }
+  }, [loading, formData, login, location.state?.from, navigate]);
 
   // ─── Variantes de animación ────────────────────────────────────────────────
   const containerVariants = {
@@ -333,7 +359,7 @@ const LoginPage = () => {
                   {loading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                      <span>{TEXTS.btnLoading}</span>
+                      <span>{retryCount > 0 ? `Reintentando ${retryCount}/${MAX_RETRIES}...` : TEXTS.btnLoading}</span>
                     </>
                   ) : (
                     <>
