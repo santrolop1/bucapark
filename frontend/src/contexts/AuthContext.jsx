@@ -6,6 +6,22 @@ const AuthContext = createContext(null);
 const TOKEN_KEY = 'bucapark_token';
 const USER_KEY = 'bucapark_user';
 
+const normalizeUser = (rawUser) => {
+  if (!rawUser || typeof rawUser !== 'object') return null;
+  return {
+    ...rawUser,
+    rol: rawUser.rol || rawUser.role || 'ciudadano',
+  };
+};
+
+const getAuthPayload = (response) => {
+  const payload = response?.data?.data ?? response?.data ?? {};
+  return {
+    token: payload.token,
+    user: normalizeUser(payload.user ?? payload.usuario),
+  };
+};
+
 const isTokenExpired = (token) => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -54,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       // FASE 2: validar contra el backend en segundo plano (no bloquea)
       try {
         const res = await authService.me();
-        const userData = res.data?.data?.user || res.data?.data || res.data || null;
+        const userData = normalizeUser(res.data?.data?.user || res.data?.data || res.data || null);
         if (userData) {
           console.log('[AUTH] usuario recuperado', userData);
           localStorage.setItem(USER_KEY, JSON.stringify(userData));
@@ -85,14 +101,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async ({ email, password }) => {
     const res = await authService.login({ email, password });
-    const { token: newToken, user: newUser } = res.data.data;
+    const { token: newToken, user: newUser } = getAuthPayload(res);
+    if (!newToken || !newUser) throw new Error('Respuesta de login inválida');
     _saveSession(newToken, newUser);
     return newUser;
   }, [_saveSession]);
 
   const register = useCallback(async ({ nombre, email, password }) => {
     const res = await authService.register({ nombre, email, password });
-    const { token: newToken, user: newUser } = res.data.data;
+    const { token: newToken, user: newUser } = getAuthPayload(res);
+    if (!newToken || !newUser) throw new Error('Respuesta de registro inválida');
     _saveSession(newToken, newUser);
     return newUser;
   }, [_saveSession]);

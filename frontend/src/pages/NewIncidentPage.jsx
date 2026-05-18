@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { incidentService, parkService } from '../api/services';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  ArrowLeft, MapPin, TreePine, CheckCircle2, AlertTriangle,
+  ArrowLeft, MapPin, CheckCircle2, AlertTriangle,
   Loader2, AlertCircle, Shield, Info,
 } from 'lucide-react';
 
@@ -56,7 +56,10 @@ export default function NewIncidentPage() {
     }
   }, []);
 
-  useEffect(() => { loadParks(); }, [loadParks]);
+  useEffect(() => {
+    const timer = setTimeout(loadParks, 0);
+    return () => clearTimeout(timer);
+  }, [loadParks]);
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));

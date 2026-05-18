@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,7 +79,7 @@ const LoginPage = () => {
     if (error) setError('');
   };
 
-  const handleSubmit = useCallback(async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
@@ -122,7 +122,7 @@ const LoginPage = () => {
       setLoading(false);
       setRetryCount(0);
     }
-  }, [loading, formData, login, location.state?.from, navigate]);
+  };
 
   // ─── Variantes de animación ────────────────────────────────────────────────
   const containerVariants = {

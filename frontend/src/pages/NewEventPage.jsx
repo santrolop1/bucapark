@@ -56,7 +56,10 @@ export default function NewEventPage() {
     }
   }, []);
 
-  useEffect(() => { loadParks(); }, [loadParks]);
+  useEffect(() => {
+    const timer = setTimeout(loadParks, 0);
+    return () => clearTimeout(timer);
+  }, [loadParks]);
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
