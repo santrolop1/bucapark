@@ -12,7 +12,7 @@ const baseURL = rawBase
 
 const axiosClient = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
