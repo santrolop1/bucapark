@@ -22,7 +22,7 @@ const buildResponse = (success, messageOrError, data = null) => {
 
 const register = async (req, res) => {
   try {
-    const { nombre, email, password, rol } = req.body;
+    const { nombre, email, password } = req.body;
 
     if (!nombre || !email || !password) {
       return res.status(400).json(
@@ -42,7 +42,8 @@ const register = async (req, res) => {
       nombre: nombre.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      rol: rol || 'ciudadano',
+      // Nunca aceptar roles desde registro público
+      rol: 'ciudadano',
     });
 
     const token = generateToken(newUser);
