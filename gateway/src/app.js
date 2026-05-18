@@ -18,8 +18,11 @@ const PORT = process.env.PORT || 3000;
 //                    render.yaml fromService con property: host
 // Si ninguna está seteada, usa localhost como fallback para desarrollo local.
 const svcUrl = (urlVar, hostVar, localPort) => {
-  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
-  if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
+  const configuredUrl = process.env[urlVar]?.trim();
+  const configuredHost = process.env[hostVar]?.trim();
+
+  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
+  if (configuredHost) return `https://${configuredHost}`;
   return `http://127.0.0.1:${localPort}`;
 };
 
@@ -46,18 +49,20 @@ app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 // Construye el proxy handler para un servicio.
-// pathRewrite reconstruye la ruta completa porque http-proxy-middleware v4
-// ya strip el prefijo cuando está montado con app.use('/prefix', ...).
+// Express recorta el prefijo cuando el proxy esta montado con app.use('/prefix', ...).
+// Los microservicios esperan la ruta completa (/api/auth/login, /api/parks, etc.),
+// asi que se reconstruye desde originalUrl antes de reenviar.
 const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
   target:       url,
   changeOrigin: true,
   proxyTimeout: 15000,
   timeout:      15000,
+  pathRewrite: (_path, req) => req.originalUrl,
 
   on: {
     proxyReq: (proxyReq, req, res) => {
       fixRequestBody(proxyReq, req, res);
-      console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${req.path}`);
+      console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${req.originalUrl}`);
     },
 
     proxyRes: (proxyRes, req) => {

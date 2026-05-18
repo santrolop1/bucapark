@@ -1,5 +1,8 @@
 require("dotenv").config();
 
+const dns = require("dns");
+dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
+
 const express = require("express");
 const cors    = require("cors");
 const helmet  = require("helmet");
@@ -75,6 +78,10 @@ const requireDatabase = (_req, res, next) => {
 // POST /api/auth/login
 // GET  /api/auth/me
 app.use("/api/auth", requireDatabase, authRoutes);
+
+// Compatibilidad con gateways/proxies que recortan el prefijo /api/auth
+// antes de reenviar la peticion al microservicio.
+app.use("/", requireDatabase, authRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
