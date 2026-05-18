@@ -23,6 +23,12 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Rutas accesibles sin sesión — un 401 aquí no debe redirigir al login
+const PUBLIC_ROUTES = ['/', '/parks', '/events', '/login', '/register'];
+
+const isPublicRoute = () =>
+  PUBLIC_ROUTES.some((r) => window.location.pathname === r || window.location.pathname.startsWith(r + '/'));
+
 // Limpia sesión si el servidor responde 401
 axiosClient.interceptors.response.use(
   (response) => response,
@@ -30,8 +36,8 @@ axiosClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('bucapark_user');
-      // Redirige a login solo si no estamos ya ahí
-      if (!window.location.pathname.startsWith('/login')) {
+      // Solo redirige en rutas que requieren autenticación
+      if (!isPublicRoute()) {
         window.location.href = '/login';
       }
     }
