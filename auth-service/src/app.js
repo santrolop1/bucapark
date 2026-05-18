@@ -1,8 +1,5 @@
 require("dotenv").config();
 
-const dns = require("dns");
-dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
-
 const express = require("express");
 const cors    = require("cors");
 const helmet  = require("helmet");
@@ -62,11 +59,22 @@ app.get("/health", (req, res) => {
   });
 });
 
+const requireDatabase = (_req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      error: "Base de datos no disponible",
+    });
+  }
+
+  next();
+};
+
 // ── Rutas ────────────────────────────────────────────────────────────────────
 // POST /api/auth/register
 // POST /api/auth/login
 // GET  /api/auth/me
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", requireDatabase, authRoutes);
 
 // ── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
@@ -74,17 +82,22 @@ app.use((req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const startServer = async () => {
+const connectWithRetry = async () => {
   try {
     await connectDatabase();
-    app.listen(PORT, () => {
-      console.log(`[AUTH] Servicio iniciado — puerto ${PORT}`);
-      console.log(`[AUTH] Rutas: POST /api/auth/register | POST /api/auth/login | GET /api/auth/me`);
-    });
   } catch (err) {
-    console.error("[AUTH] Error en startup:", err.message);
-    process.exit(1);
+    console.error("[AUTH] MongoDB no disponible, reintentando en 10s:", err.message);
+    setTimeout(connectWithRetry, 10000);
   }
+};
+
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`[AUTH] Servicio iniciado - puerto ${PORT}`);
+    console.log("[AUTH] Rutas: POST /api/auth/register | POST /api/auth/login | GET /api/auth/me");
+  });
+
+  connectWithRetry();
 };
 
 startServer();

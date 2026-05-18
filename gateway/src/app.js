@@ -6,7 +6,7 @@ const express = require('express');
 const cors    = require('cors');
 const helmet  = require('helmet');
 const morgan  = require('morgan');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -17,9 +17,11 @@ const PORT = process.env.PORT || 3000;
 //   *_SERVICE_HOST → solo hostname (ej: buca-events.onrender.com) — viene de
 //                    render.yaml fromService con property: host
 // Si ninguna está seteada, usa localhost como fallback para desarrollo local.
+const useRemoteServices = process.env.USE_REMOTE_SERVICES === 'true';
+
 const svcUrl = (urlVar, hostVar, localPort) => {
-  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
   if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
+  if (useRemoteServices && process.env[urlVar]) return process.env[urlVar].replace(/\/$/, '');
   return `http://127.0.0.1:${localPort}`;
 };
 
@@ -41,7 +43,6 @@ app.use(cors(
     ? { origin: corsOrigin.split(',').map(s => s.trim()) }
     : {}
 ));
-app.use(express.json());
 app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -56,14 +57,8 @@ const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
   timeout:      15000,
 
   on: {
-    proxyReq: (proxyReq, req) => {
-      // Reenvía el body en requests con payload
-      if (req.body && Object.keys(req.body).length) {
-        const body = JSON.stringify(req.body);
-        proxyReq.setHeader('Content-Type',   'application/json');
-        proxyReq.setHeader('Content-Length', Buffer.byteLength(body));
-        proxyReq.write(body);
-      }
+    proxyReq: (proxyReq, req, res) => {
+      fixRequestBody(proxyReq, req, res);
       console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${req.path}`);
     },
 
