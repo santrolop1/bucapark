@@ -30,7 +30,8 @@ const PublicOnlyRoute = ({ children }) => {
   return isAuthenticated ? <Navigate to="/" replace /> : children;
 };
 
-const NO_HEADER_PATHS = ['/login', '/register'];
+// /dashboard tiene su propio navbar interno — excluir del header global
+const NO_HEADER_PATHS = ['/login', '/register', '/dashboard'];
 
 const Layout = ({ children }) => {
   const { pathname } = useLocation();
