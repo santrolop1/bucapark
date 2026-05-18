@@ -17,9 +17,13 @@ const PORT = process.env.PORT || 3000;
 //   *_SERVICE_HOST → solo hostname (ej: buca-events.onrender.com) — viene de
 //                    render.yaml fromService con property: host
 // Si ninguna está seteada, usa localhost como fallback para desarrollo local.
+const useRemoteServices =
+  process.env.NODE_ENV === 'production' ||
+  process.env.USE_REMOTE_SERVICES === 'true';
+
 const svcUrl = (urlVar, hostVar, localPort) => {
-  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
-  if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
+  if (useRemoteServices && process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
+  if (useRemoteServices && process.env[hostVar]) return `https://${process.env[hostVar]}`;
   return `http://127.0.0.1:${localPort}`;
 };
 
@@ -35,9 +39,10 @@ const SERVICES = {
 
 // ── Middlewares globales ─────────────────────────────────────────────────────
 app.use(helmet());
+const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors(
-  process.env.CORS_ORIGIN
-    ? { origin: process.env.CORS_ORIGIN.split(',').map(s => s.trim()) }
+  corsOrigin && corsOrigin !== '*'
+    ? { origin: corsOrigin.split(',').map(s => s.trim()) }
     : {}
 ));
 app.use(express.json());
