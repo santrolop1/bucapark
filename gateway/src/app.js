@@ -17,13 +17,9 @@ const PORT = process.env.PORT || 3000;
 //   *_SERVICE_HOST → solo hostname (ej: buca-events.onrender.com) — viene de
 //                    render.yaml fromService con property: host
 // Si ninguna está seteada, usa localhost como fallback para desarrollo local.
-const useRemoteServices =
-  process.env.NODE_ENV === 'production' ||
-  process.env.USE_REMOTE_SERVICES === 'true';
-
 const svcUrl = (urlVar, hostVar, localPort) => {
-  if (useRemoteServices && process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
-  if (useRemoteServices && process.env[hostVar]) return `https://${process.env[hostVar]}`;
+  if (process.env[urlVar])  return process.env[urlVar].replace(/\/$/, '');
+  if (process.env[hostVar]) return `https://${process.env[hostVar]}`;
   return `http://127.0.0.1:${localPort}`;
 };
 
@@ -59,8 +55,6 @@ const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
   proxyTimeout: 15000,
   timeout:      15000,
 
-  pathRewrite: (path) => `${prefix}${path === '/' ? '' : path}`,
-
   on: {
     proxyReq: (proxyReq, req) => {
       // Reenvía el body en requests con payload
@@ -70,7 +64,7 @@ const makeProxy = ({ url, name, prefix }) => createProxyMiddleware({
         proxyReq.setHeader('Content-Length', Buffer.byteLength(body));
         proxyReq.write(body);
       }
-      console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${prefix}${req.path}`);
+      console.log(`[PROXY →] ${name}: ${req.method} ${req.originalUrl} → ${url}${req.path}`);
     },
 
     proxyRes: (proxyRes, req) => {
