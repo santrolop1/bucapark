@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import AppHeader from '../components/AppHeader';
 
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
@@ -28,9 +29,22 @@ const PublicOnlyRoute = ({ children }) => {
   return isAuthenticated ? <Navigate to="/" replace /> : children;
 };
 
+const NO_HEADER_PATHS = ['/login', '/register'];
+
+const Layout = ({ children }) => {
+  const { pathname } = useLocation();
+  return (
+    <>
+      {!NO_HEADER_PATHS.includes(pathname) && <AppHeader />}
+      {children}
+    </>
+  );
+};
+
 function AppRouter() {
   return (
     <BrowserRouter>
+      <Layout>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/parks" element={<ParksPage />} />
@@ -89,6 +103,7 @@ function AppRouter() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Layout>
     </BrowserRouter>
   );
 }
