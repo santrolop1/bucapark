@@ -22,7 +22,6 @@ import {
   AlertTriangle,
   Info,
   ChevronRight,
-  Star,
   CreditCard,
   Shield,
   Sparkles,
@@ -79,22 +78,10 @@ const TEXTS = {
   reservationErrorGeneric: 'No se pudo crear la reserva. Intentá de nuevo.',
 };
 
-// --- Info base del parque seleccionado ---
-// TODO: Mantener como fallback hasta que backend exponga rating, reviews e imagen.
-const PARK_SELECTED = {
-  id: 1,
-  nombre: 'Parque San Pío',
-  slogan: 'El corazón verde de Bucaramanga',
-  direccion: 'Carrera 27 #45-67, Centro',
-  ciudad: 'Bucaramanga',
-  rating: 4.8,
-  reviewsCount: 124,
-  imagenColor: 'bg-[#4a6741]',
-};
-
-// --- Tipos de reserva disponibles ---
-// TODO: Reemplazar por tipos/espacios reales desde backend.
-const RESERVATION_TYPES = [
+// --- Tipos de espacio del sistema ---
+// Configuración local del sistema hasta que el backend exponga un endpoint de espacios por parque.
+// No son datos reales de la base de datos; son las opciones que el formulario permite seleccionar.
+const SYSTEM_SPACE_TYPES = [
   {
     id: 'cancha-futbol',
     nombre: 'Cancha de Fútbol',
@@ -208,13 +195,6 @@ const FEATURES = [
   { icon: Zap, text: 'Confirmación instantánea' },
 ];
 
-// --- Stats rápidos del parque ---
-// TODO: Reemplazar por stats reales del parque cuando existan en backend.
-const PARK_STATS = [
-  { label: 'Capacidad', value: '500 personas' },
-  { label: 'Superficie', value: '2.4 ha' },
-  { label: 'Zonas', value: '6 espacios' },
-];
 
 // --- Meses para selector de fecha ---
 const MONTHS = [
@@ -400,22 +380,15 @@ function HeroSection({ parkInfo, parkStats }) {
         <div className="lg:col-span-2">
           <div className={`${parkInfo.imagenColor} rounded-2xl h-48 sm:h-56 lg:h-full min-h-[180px] flex items-center justify-center relative overflow-hidden`}>
             <TreePine className="h-24 w-24 text-white opacity-20" />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-5">
-              <div className="flex items-center gap-1.5 text-white/90 text-xs font-medium">
-                <Star className="h-3.5 w-3.5 text-[#ffd54f] fill-[#ffd54f]" />
-                {parkInfo.rating} ({parkInfo.reviewsCount} opiniones)
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Info del parque */}
         <div className="lg:col-span-3 flex flex-col justify-center">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-black leading-tight mb-1 text-[#1a332a]">
+            <h1 className="text-3xl sm:text-4xl font-black leading-tight mb-4 text-[#1a332a]">
               {TEXTS.pageTitle}
             </h1>
-            <p className="text-sm text-[#8bc34a] font-bold mb-4">{parkInfo.slogan}</p>
 
             <div className="flex items-start gap-2 mb-4">
               <MapPin className="h-4 w-4 text-[#8bc34a] mt-0.5 flex-shrink-0" />
@@ -445,7 +418,7 @@ function HeroSection({ parkInfo, parkStats }) {
 function TypeSelector({ selected, onSelect }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {RESERVATION_TYPES.map((tipo, i) => (
+      {SYSTEM_SPACE_TYPES.map((tipo, i) => (
         <motion.button
           key={tipo.id}
           type="button"
@@ -754,7 +727,7 @@ const formatReservationDate = (date) => {
 
 // --- Resumen visual de la reserva ---
 function ReservationSummary({ formData, selectedType }) {
-  const tipo = RESERVATION_TYPES.find((t) => t.id === selectedType) || null;
+  const tipo = SYSTEM_SPACE_TYPES.find((t) => t.id === selectedType) || null;
   const duracion = DURATIONS.find((d) => d.value === formData.duration) || null;
 
   const precioTotal = useMemo(() => {
@@ -1062,27 +1035,24 @@ export default function NewReservationPage() {
   }, [loadPark]);
 
   const parkInfo = useMemo(() => ({
-    ...PARK_SELECTED,
-    id: park?._id || park?.id || parkFromQuery || PARK_SELECTED.id,
-    nombre: park?.nombre || PARK_SELECTED.nombre,
-    slogan: park?.descripcion || PARK_SELECTED.slogan,
-    direccion: park?.direccion || PARK_SELECTED.direccion,
-    ciudad: park?.ciudad || PARK_SELECTED.ciudad,
+    id:          park?._id || park?.id || parkFromQuery || '',
+    nombre:      park?.nombre || 'Parque',
+    descripcion: park?.descripcion || '',
+    direccion:   park?.direccion || '',
+    ciudad:      park?.ciudad || '',
+    imagenColor: 'bg-[#4a6741]', // placeholder visual
   }), [park, parkFromQuery]);
 
   const visibleParkStats = useMemo(() => {
+    const stats = [];
+    if (park?.capacidad) stats.push({ label: 'Capacidad', value: String(park.capacidad) });
     const createdLabel = getCreatedDateLabel(park?.createdAt);
-    if (!createdLabel) return PARK_STATS;
-
-    return [
-      PARK_STATS[0],
-      PARK_STATS[1],
-      { ...PARK_STATS[2], label: 'Registro', value: createdLabel },
-    ];
+    if (createdLabel) stats.push({ label: 'Registro', value: createdLabel });
+    return stats;
   }, [park]);
 
   const selectedTypeData = useMemo(
-    () => RESERVATION_TYPES.find((type) => type.id === selectedType) || null,
+    () => SYSTEM_SPACE_TYPES.find((type) => type.id === selectedType) || null,
     [selectedType]
   );
 
@@ -1390,12 +1360,9 @@ export default function NewReservationPage() {
                 <h3 className="font-bold text-sm uppercase tracking-wider text-[#8bc34a] mb-3">
                   ¿Necesitás ayuda?
                 </h3>
-                <p className="text-sm text-white/80 mb-3">
-                  Si tenés dudas sobre tu reserva, contactanos.
+                <p className="text-sm text-white/80">
+                  Si tenés dudas sobre tu reserva, contactanos por los canales oficiales de BUCAPARK.
                 </p>
-                <div className="flex items-center gap-2 text-sm text-white/90">
-                  <span className="font-bold">Tel:</span> +57 607 123 4567
-                </div>
               </motion.div>
             </div>
           </div>
