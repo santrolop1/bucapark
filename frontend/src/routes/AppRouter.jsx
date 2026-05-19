@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AppHeader from '../components/AppHeader';
+import AdminRoute from '../components/AdminRoute';
 
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
@@ -11,6 +12,9 @@ import NewReservationPage from '../pages/NewReservationPage';
 import EventsPage from '../pages/EventsPage';
 import NewEventPage from '../pages/NewEventPage';
 import NewIncidentPage from '../pages/NewIncidentPage';
+import MyReservationsPage from '../pages/MyReservationsPage';
+import MyEventsPage from '../pages/MyEventsPage';
+import MyIncidentsPage from '../pages/MyIncidentsPage';
 import DashboardPage from '../pages/DashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
@@ -101,8 +105,38 @@ function AppRouter() {
             </PrivateRoute>
           }
         />
-
-        {/* futuras rutas administrativas — usar <AdminRoute> como wrapper */}
+        <Route
+          path="/reservations"
+          element={
+            <PrivateRoute>
+              <MyReservationsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/events/my"
+          element={
+            <PrivateRoute>
+              <MyEventsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/incidents/my"
+          element={
+            <PrivateRoute>
+              <MyIncidentsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute allowedRoles={[ 'admin', 'operario' ]}>
+              <Navigate to="/dashboard" replace />
+            </AdminRoute>
+          }
+        />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

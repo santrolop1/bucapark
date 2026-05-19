@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const AdminRoute = ({ children }) => {
+const AdminRoute = ({ children, allowedRoles = ['admin'] }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -14,7 +14,7 @@ const AdminRoute = ({ children }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.rol !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (!allowedRoles.includes(user.rol)) return <Navigate to="/dashboard" replace />;
 
   return children;
 };

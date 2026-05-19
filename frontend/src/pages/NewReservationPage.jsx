@@ -79,8 +79,8 @@ const TEXTS = {
 };
 
 // --- Tipos de espacio del sistema ---
-// Configuración local del sistema hasta que el backend exponga un endpoint de espacios por parque.
-// No son datos reales de la base de datos; son las opciones que el formulario permite seleccionar.
+// Configuración local del sistema. El backend actual no expone un endpoint de espacios por parque,
+// por lo que se usan los valores permitidos por la API de reservas.
 const SYSTEM_SPACE_TYPES = [
   {
     id: 'cancha-futbol',
@@ -96,7 +96,7 @@ const SYSTEM_SPACE_TYPES = [
     imagenColor: 'bg-[#4a6741]',
   },
   {
-    id: 'cancha-basket',
+    id: 'basquetbol',
     nombre: 'Cancha de Baloncesto',
     descripcion: 'Parquet cubierto premium',
     icon: 'basket',
@@ -122,7 +122,7 @@ const SYSTEM_SPACE_TYPES = [
     imagenColor: 'bg-[#6b8a7a]',
   },
   {
-    id: 'zona-yoga',
+    id: 'yoga',
     nombre: 'Zona Yoga',
     descripcion: 'Deck de madera natural',
     icon: 'yoga',
@@ -135,7 +135,7 @@ const SYSTEM_SPACE_TYPES = [
     imagenColor: 'bg-[#5a6b4a]',
   },
   {
-    id: 'zona-picnic',
+    id: 'picnic-bbq',
     nombre: 'Zona de Picnic',
     descripcion: 'Áreas verdes con mesas',
     icon: 'picnic',
@@ -159,7 +159,7 @@ const DURATIONS = [
 ];
 
 // --- Horarios disponibles por turno ---
-// TODO: Reemplazar por disponibilidad real al consultar backend.
+// Valores estáticos. El backend no expone un endpoint de horarios disponibles actualmente.
 const TIME_SLOTS = [
   { time: '05:00', period: 'morning', label: '5:00 AM', available: true },
   { time: '06:00', period: 'morning', label: '6:00 AM', available: true },
@@ -1090,10 +1090,16 @@ export default function NewReservationPage() {
 
     const payload = {
       parkId: parkInfo.id,
-      espacio: selectedTypeData?.nombre || '',
+      tipoEspacio: selectedTypeData?.id || '',
       fecha: fechaIso,
       horaInicio: formData.time,
-      horaFin,
+      duracion: formData.duration,
+      personas: formData.people,
+      proposito: selectedTypeData?.nombre || 'Reserva',
+      notas: formData.notes.trim(),
+      precioTotal: Number.isFinite(selectedTypeData?.precioBase)
+        ? selectedTypeData.precioBase * formData.duration
+        : undefined,
     };
 
     setLoading(true);
@@ -1176,10 +1182,7 @@ export default function NewReservationPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
           <SuccessState
             onNewReservation={handleNewReservation}
-            onViewReservations={() => {
-              // TODO: Cambiar a /reservations cuando exista ruta dedicada.
-              navigate('/dashboard');
-            }}
+            onViewReservations={() => navigate('/reservations')}
           />
         </div>
       </div>
