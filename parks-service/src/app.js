@@ -45,14 +45,16 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
-  await connectDatabase();
-
-  app.listen(PORT, () => {
-    console.log(
-      `[OK] Parks Service corriendo en puerto ${PORT}`
-    );
-  });
+const connectWithRetry = async () => {
+  try {
+    await connectDatabase();
+  } catch (err) {
+    console.error("[PARKS] MongoDB no disponible, reintentando en 10s:", err.message);
+    setTimeout(connectWithRetry, 10000);
+  }
 };
 
-startServer();
+app.listen(PORT, () => {
+  console.log(`[OK] Parks Service corriendo en puerto ${PORT}`);
+  connectWithRetry();
+});

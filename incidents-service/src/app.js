@@ -57,19 +57,16 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
-  await connectDB();
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log(
-        'incidents-service corriendo en puerto ' +
-        PORT
-      );
-    }
-  );
+const connectWithRetry = async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('[INCIDENTS] MongoDB no disponible, reintentando en 10s:', err.message);
+    setTimeout(connectWithRetry, 10000);
+  }
 };
 
-startServer();
+app.listen(PORT, () => {
+  console.log('incidents-service corriendo en puerto ' + PORT);
+  connectWithRetry();
+});

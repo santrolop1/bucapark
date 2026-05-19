@@ -11,7 +11,7 @@ const connectDatabase = async () => {
     console.error("[ERROR] MongoDB:");
     console.error(error.message);
 
-    process.exit(1);
+    throw error;
   }
 };
 

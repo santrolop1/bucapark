@@ -19,7 +19,7 @@ const connectDB = async () => {
       error.message
     );
 
-    process.exit(1);
+    throw error;
   }
 };
 

@@ -57,17 +57,17 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
+const connectWithRetry = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`[INVENTORY] Servicio iniciado — puerto ${PORT}`);
-      console.log(`[INVENTORY] Rutas: GET /api/inventory | POST /api/inventory`);
-    });
   } catch (err) {
-    console.error('[INVENTORY] Error en startup:', err.message);
-    process.exit(1);
+    console.error('[INVENTORY] MongoDB no disponible, reintentando en 10s:', err.message);
+    setTimeout(connectWithRetry, 10000);
   }
 };
 
-startServer();
+app.listen(PORT, () => {
+  console.log(`[INVENTORY] Servicio iniciado — puerto ${PORT}`);
+  console.log(`[INVENTORY] Rutas: GET /api/inventory | POST /api/inventory`);
+  connectWithRetry();
+});

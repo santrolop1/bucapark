@@ -57,17 +57,17 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
+const connectWithRetry = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`[EVENTS] Servicio iniciado — puerto ${PORT}`);
-      console.log(`[EVENTS] Rutas: GET /api/events/public | POST /api/events | PATCH /api/events/:id/approve`);
-    });
   } catch (err) {
-    console.error('[EVENTS] Error en startup:', err.message);
-    process.exit(1);
+    console.error('[EVENTS] MongoDB no disponible, reintentando en 10s:', err.message);
+    setTimeout(connectWithRetry, 10000);
   }
 };
 
-startServer();
+app.listen(PORT, () => {
+  console.log(`[EVENTS] Servicio iniciado — puerto ${PORT}`);
+  console.log(`[EVENTS] Rutas: GET /api/events/public | POST /api/events | PATCH /api/events/:id/approve`);
+  connectWithRetry();
+});

@@ -57,17 +57,17 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
+const connectWithRetry = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`[MAINTENANCE] Servicio iniciado — puerto ${PORT}`);
-      console.log(`[MAINTENANCE] Rutas: GET /api/maintenance | POST /api/maintenance`);
-    });
   } catch (err) {
-    console.error('[MAINTENANCE] Error en startup:', err.message);
-    process.exit(1);
+    console.error('[MAINTENANCE] MongoDB no disponible, reintentando en 10s:', err.message);
+    setTimeout(connectWithRetry, 10000);
   }
 };
 
-startServer();
+app.listen(PORT, () => {
+  console.log(`[MAINTENANCE] Servicio iniciado — puerto ${PORT}`);
+  console.log(`[MAINTENANCE] Rutas: GET /api/maintenance | POST /api/maintenance`);
+  connectWithRetry();
+});
