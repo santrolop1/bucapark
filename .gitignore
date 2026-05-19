@@ -6,3 +6,9 @@ build
 service-logs
 backup-fix-*
 .claude/
+
+*.log
+
+backend-log.txt
+
+frontend-log.txt
