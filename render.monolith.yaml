@@ -1,0 +1,35 @@
+# render.monolith.yaml — BucaPark Backend Unificado
+#
+# INSTRUCCIONES DE USO:
+#   Cuando estés listo para migrar:
+#   1. Verificar que backend/ funciona localmente con MONGO_URI y JWT_SECRET reales
+#   2. Renombrar este archivo a render.yaml (reemplaza el actual)
+#   3. Hacer push a main
+#   4. En Render dashboard → New Blueprint → conectar repo → Render detecta render.yaml
+#   5. Ingresar MONGO_URI y JWT_SECRET cuando los pida
+#   6. Actualizar VITE_API_BASE_URL en Vercel → URL del nuevo servicio
+#
+# ROLLBACK:
+#   git checkout main render.yaml && git push origin main
+#   En Render: redeploy del Blueprint anterior
+
+services:
+  - type: web
+    name: bucapark-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install --omit=dev
+    startCommand: node src/app.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CORS_ORIGIN
+        value: https://bucapark.vercel.app
