@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { parkService, eventService, reservationService } from '../api/services';
+import { parkService, eventService, reservationService, incidentService } from '../api/services';
 import {
   TreePine, Calendar, AlertTriangle, MapPin, Plus, Bell, Search,
   LogOut, ChevronRight, TrendingUp, Users, Clock, CheckCircle2,
@@ -177,6 +177,23 @@ const mapEvent = (event, index, parkNameById = {}) => ({
   color: EVENT_COLORS[index % EVENT_COLORS.length],
 });
 
+const getTimestamp = (value) => {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+};
+
+const formatRelativeTime = (value) => {
+  const timestamp = getTimestamp(value);
+  if (!timestamp) return 'Reciente';
+  const diffMinutes = Math.round((Date.now() - timestamp) / 60000);
+  if (diffMinutes < 1) return 'Hace unos segundos';
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `Hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`;
+  const diffDays = Math.round(diffHours / 24);
+  return `Hace ${diffDays} día${diffDays === 1 ? '' : 's'}`;
+};
+
 // ─── Componentes auxiliares ───────────────────────────────────────────────────
 
 const StatusBadge = ({ estado }) => {
@@ -224,15 +241,19 @@ const DashboardPage = () => {
   };
 
   // ── Estado local ───────────────────────────────────────────────
-  const [parks,        setParks]        = useState([]);
-  const [events,       setEvents]       = useState([]);
-  const [parksLoading, setParksLoading] = useState(true);
-  const [eventsLoading,setEventsLoading]= useState(true);
+  const [parks,            setParks]            = useState([]);
+  const [events,           setEvents]           = useState([]); // eventos públicos
+  const [myEvents,         setMyEvents]         = useState([]); // eventos del usuario
+  const [incidents,        setIncidents]        = useState([]);
+  const [parksLoading,     setParksLoading]     = useState(true);
+  const [eventsLoading,    setEventsLoading]    = useState(true);
+  const [myEventsLoading,  setMyEventsLoading]  = useState(true);
+  const [incidentsLoading, setIncidentsLoading] = useState(true);
   const [myReservationsLoading, setMyReservationsLoading] = useState(true);
-  const [parksError,   setParksError]   = useState(null);
-  const [myReservations, setMyReservations] = useState([]);
-  const [activeTab,    setActiveTab]    = useState('todos');
-  const [searchOpen,   setSearchOpen]   = useState(false);
+  const [parksError,       setParksError]       = useState(null);
+  const [myReservations,   setMyReservations]   = useState([]);
+  const [activeTab,        setActiveTab]        = useState('todos');
+  const [searchOpen,       setSearchOpen]       = useState(false);
 
   // ── Fetch parques ──────────────────────────────────────────────
   const fetchParks = useCallback(async () => {
@@ -258,10 +279,38 @@ const DashboardPage = () => {
       const data = res.data?.data ?? res.data ?? [];
       setEvents(Array.isArray(data) ? data : []);
     } catch (err) {
-      // Falla silenciosa: eventos quedan vacíos, sección muestra mensaje
-      console.warn('Dashboard — no se pudieron cargar los eventos:', err);
+      console.warn('Dashboard — no se pudieron cargar los eventos públicos:', err);
+      setEvents([]);
     } finally {
       setEventsLoading(false);
+    }
+  }, []);
+
+  const fetchMyEvents = useCallback(async () => {
+    setMyEventsLoading(true);
+    try {
+      const res = await eventService.getMine();
+      const data = res.data?.data ?? res.data ?? [];
+      setMyEvents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn('Dashboard — no se pudieron cargar mis eventos:', err);
+      setMyEvents([]);
+    } finally {
+      setMyEventsLoading(false);
+    }
+  }, []);
+
+  const fetchIncidents = useCallback(async () => {
+    setIncidentsLoading(true);
+    try {
+      const res = await incidentService.getMine();
+      const data = res.data?.data ?? res.data ?? [];
+      setIncidents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.warn('Dashboard — no se pudieron cargar mis incidencias:', err);
+      setIncidents([]);
+    } finally {
+      setIncidentsLoading(false);
     }
   }, []);
 
@@ -284,10 +333,12 @@ const DashboardPage = () => {
     const timer = setTimeout(() => {
       fetchParks();
       fetchEvents();
+      fetchMyEvents();
+      fetchIncidents();
       fetchMyReservations();
     }, 0);
     return () => clearTimeout(timer);
-  }, [fetchParks, fetchEvents, fetchMyReservations]);
+  }, [fetchParks, fetchEvents, fetchMyEvents, fetchIncidents, fetchMyReservations]);
 
   // ── Datos derivados ────────────────────────────────────────────
 
@@ -306,42 +357,86 @@ const DashboardPage = () => {
     ? displayParks
     : displayParks.filter((p) => p.estado === activeTab);
 
-  // Stats: parques y eventos desde datos reales; reservas e incidencias mock por ahora
+  // Stats: todos los contadores se derivan de datos reales del backend
+  const uniqueEventCount = useMemo(() => {
+    const ids = new Set();
+    [...events, ...myEvents].forEach((ev) => {
+      const id = ev._id ?? ev.id ?? ev.eventId ?? null;
+      if (id != null) ids.add(id);
+    });
+    return ids.size || events.length + myEvents.length;
+  }, [events, myEvents]);
+
   const computedStats = STATS_CONFIG.map((cfg) => ({
     ...cfg,
     value: cfg.key === 'parques'
       ? parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length
       : cfg.key === 'eventos'
-      ? events.length
+      ? uniqueEventCount
       : cfg.key === 'reservas'
       ? myReservations.length
+      : cfg.key === 'incidencias'
+      ? incidents.length
       : cfg.mockValue,
     trend: cfg.mockTrend,
+    loading: cfg.key === 'parques'
+      ? parksLoading
+      : cfg.key === 'eventos'
+      ? eventsLoading || myEventsLoading
+      : cfg.key === 'reservas'
+      ? myReservationsLoading
+      : cfg.key === 'incidencias'
+      ? incidentsLoading
+      : false,
   }));
 
-  // Actividad derivada de eventos reales + reservas del usuario
   const activityItems = useMemo(() => {
     const items = [];
-    events.slice(0, 3).forEach((ev, i) => {
+
+    incidents.forEach((inc, i) => {
+      const title = inc.titulo || inc.descripcion || inc.tipo || 'Incidencia reportada';
+      const state = inc.estado ? inc.estado.toString() : 'Pendiente';
+      const timestamp = getTimestamp(inc.createdAt || inc.fecha || inc.fechaCreacion || inc.fechaReporte);
+      items.push({
+        id: `inc-${inc._id || i}`,
+        texto: `[INCIDENTE] ${title} • ${state}`,
+        tiempo: formatRelativeTime(timestamp),
+        icon: AlertTriangle,
+        color: '#ff9800',
+        timestamp,
+      });
+    });
+
+    myEvents.forEach((ev, i) => {
+      const title = ev.nombre || ev.titulo || 'Evento';
+      const timestamp = getTimestamp(ev.createdAt || ev.fecha || ev.fechaInicio);
       items.push({
         id: `ev-${ev._id || i}`,
-        texto: ev.nombre || 'Evento',
-        tiempo: formatEventDate(ev.fecha),
+        texto: `[EVENTO] ${title}`,
+        tiempo: formatRelativeTime(timestamp),
         icon: Calendar,
         color: EVENT_COLORS[i % EVENT_COLORS.length],
+        timestamp,
       });
     });
-    myReservations.slice(0, 3).forEach((res, i) => {
+
+    myReservations.forEach((res, i) => {
+      const title = res.espacio || res.tipo || res.pista || 'Reserva';
+      const timestamp = getTimestamp(res.createdAt || res.fecha || res.fechaInicio || res.hora);
       items.push({
         id: `res-${res._id || i}`,
-        texto: `Reserva: ${res.espacio || res.parkId || 'espacio'}`,
-        tiempo: res.fecha ? formatEventDate(res.fecha) : 'Reciente',
+        texto: `[RESERVA] ${title}`,
+        tiempo: formatRelativeTime(timestamp),
         icon: CheckCircle2,
-        color: '#8bc34a',
+        color: '#4a6741',
+        timestamp,
       });
     });
-    return items.slice(0, 5);
-  }, [events, myReservations]);
+
+    return items
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      .slice(0, 5);
+  }, [incidents, myEvents, myReservations]);
 
   // Mes y año actuales para el mini-calendario
   const now = new Date();
@@ -521,12 +616,7 @@ const DashboardPage = () => {
                   </div>
                   <div className="flex items-end gap-2">
                     <span className="text-3xl lg:text-4xl font-black tracking-tight">
-                      {/* Muestra spinner si el stat depende de datos que aún cargan */}
-                      {(stat.key === 'parques' && parksLoading) ||
-                       (stat.key === 'eventos' && eventsLoading) ||
-                       (stat.key === 'reservas' && myReservationsLoading)
-                        ? '…'
-                        : stat.value}
+                      {stat.loading ? '…' : stat.value}
                     </span>
                     <span className="text-xs font-bold mb-1.5 opacity-60 flex items-center gap-0.5">
                       <TrendingUp className="h-3 w-3" />
@@ -746,6 +836,62 @@ const DashboardPage = () => {
                 )}
               </div>
             </section>
+
+            <section>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl font-black">Incidencias recientes</h2>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#e0e8db] overflow-hidden">
+                {incidentsLoading ? (
+                  [1, 2, 3].map((n) => (
+                    <div key={n} className="flex items-center gap-4 p-4 border-b border-[#f8faf6]">
+                      <motion.div className="h-12 w-12 bg-[#e8ece4] rounded-xl flex-shrink-0"
+                        animate={{ opacity: [0.4, 0.7, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: n * 0.1 }}
+                      />
+                      <div className="flex-1 space-y-2">
+                        <motion.div className="h-4 bg-[#e8ece4] rounded w-3/4"
+                          animate={{ opacity: [0.4, 0.6, 0.4] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: n * 0.1 + 0.1 }}
+                        />
+                        <motion.div className="h-3 bg-[#e8ece4] rounded w-1/2"
+                          animate={{ opacity: [0.4, 0.6, 0.4] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: n * 0.1 + 0.2 }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                ) : incidents.length === 0 ? (
+                  <p className="text-[#a8b5a0] text-sm py-10 text-center">No hay incidencias registradas.</p>
+                ) : (
+                  incidents.slice(0, 3).map((inc, i) => (
+                    <motion.div
+                      key={inc._id || i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.08 }}
+                      className={`flex items-center gap-4 p-4 ${
+                        i !== incidents.slice(0, 3).length - 1 ? 'border-b border-[#f8faf6]' : ''
+                      }`}
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-[#fff3e0] flex items-center justify-center">
+                        <AlertTriangle className="h-5 w-5 text-[#e65100]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[#1a332a] truncate">
+                          {inc.titulo || inc.descripcion || inc.tipo || 'Incidencia'}
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#5a6b5f]">
+                          <StatusBadge estado={(inc.estado || '').toLowerCase()} />
+                          <span>{formatRelativeTime(inc.createdAt || inc.fecha || inc.fechaCreacion || inc.fechaReporte)}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </section>
           </div>
 
           {/* ── Columna derecha: actividad + acciones + calendario ── */}
@@ -755,7 +901,7 @@ const DashboardPage = () => {
             <section>
               <h2 className="text-xl font-black mb-5">{TEXTS.activitySection}</h2>
               <div className="bg-white rounded-2xl border border-[#e0e8db] p-4">
-                {eventsLoading || myReservationsLoading ? (
+                {eventsLoading || myEventsLoading || myReservationsLoading || incidentsLoading ? (
                   [1, 2, 3].map((n) => (
                     <div key={n} className="flex items-center gap-3 py-3 border-b border-[#f8faf6] last:border-0">
                       <motion.div className="h-8 w-8 bg-[#e8ece4] rounded-lg flex-shrink-0"
