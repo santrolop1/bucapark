@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parkService, eventService, reservationService } from '../api/services';
+import { parkService, eventService } from '../api/services';
 import { useAuth } from '../contexts/AuthContext';
 import {
   TreePine,
@@ -224,15 +224,11 @@ export default function ParkDetailPage() {
       if (!id) return;
 
       try {
-        const [eventsRes, reservationsRes] = await Promise.all([
-          eventService.getPublic(),
-          reservationService.getAll(),
-        ]);
+        const eventsRes = await eventService.getPublic();
 
         if (!mounted) return;
 
         const events = getListPayload(eventsRes);
-        const reservations = getListPayload(reservationsRes);
         const parkIdString = String(id);
 
         const filteredEvents = events
@@ -251,12 +247,8 @@ export default function ParkDetailPage() {
             color: '#8bc34a',
           }));
 
-        const filteredReservations = reservations.filter(
-          (reservation) => String(reservation?.parkId || '') === parkIdString
-        );
-
         setEventsForPark(filteredEvents);
-        setReservationsCount(filteredReservations.length);
+        setReservationsCount(null);
       } catch {
         if (!mounted) return;
         // TODO: Mantener fallback mock mientras estos endpoints no estén garantizados en todos los ambientes.
