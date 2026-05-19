@@ -5,6 +5,10 @@ const createInventory = async (req, res) => {
     const inventory = await Inventory.create(req.body);
     res.status(201).json({ success: true, message: 'Implemento creado', data: inventory });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      const msgs = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({ success: false, error: msgs.join('. ') });
+    }
     res.status(500).json({ success: false, error: error.message });
   }
 };

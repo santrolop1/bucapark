@@ -7,7 +7,7 @@ import AppRouter from "./routes/AppRouter";
 // Pingar cada 14 min mantiene los servicios despiertos mientras la app está abierta.
 const PING_INTERVAL_MS = 14 * 60 * 1000;
 
-const pingServices = () => axiosClient.get('/status').catch(() => {});
+const pingServices = () => axiosClient.get('status').catch(() => {});
 
 function App() {
   useEffect(() => {

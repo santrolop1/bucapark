@@ -8,8 +8,7 @@ const parkSchema = new mongoose.Schema(
     descripcion: { type: String, default: '' },
     estado: {
       type: String,
-      enum: ['activo', 'mantenimiento'],
-      default: 'activo',
+      default: 'Activo',
     },
   },
   { timestamps: true }

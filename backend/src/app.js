@@ -45,14 +45,16 @@ app.use(express.json());
 app.use(morgan('[:date[iso]] :method :url :status :response-time ms'));
 
 // ── Health check ─────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
+const healthHandler = (_req, res) => {
   res.json({
     service: 'bucapark-backend',
     status: 'OK',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
   });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/status', healthHandler);
 
 // ── Guard: espera MongoDB antes de procesar rutas de negocio ─────────────────
 const requireDatabase = (_req, res, next) => {

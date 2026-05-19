@@ -105,7 +105,7 @@ const ParksPage = () => {
 
   // Estadísticas animadas del hero
   const activeCount = useMemo(
-    () => parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length,
+    () => parks.filter((p) => !(p.estado || '').toLowerCase().includes('mantenimiento')).length,
     [parks]
   );
   const { count: countTotal, ref: refTotal } = useCountUp(parks.length);
@@ -142,7 +142,12 @@ const ParksPage = () => {
     let result = [...parks];
 
     if (activeFilter !== 'todos') {
-      result = result.filter((p) => (p.estado || '').toLowerCase() === activeFilter);
+      result = result.filter((p) => {
+        const estado = (p.estado || '').toLowerCase();
+        if (activeFilter === 'mantenimiento') return estado.includes('mantenimiento');
+        if (activeFilter === 'activo') return !estado.includes('mantenimiento');
+        return true;
+      });
     }
 
     if (searchQuery.trim()) {
@@ -495,7 +500,7 @@ const ParksPage = () => {
               <AnimatePresence mode="popLayout">
                 {filteredParks.map((park, i) => {
                   const WeatherIcon = getWeatherIcon(i);
-                  const isActive = (park.estado || '').toLowerCase() === 'activo';
+                  const isActive = !(park.estado || '').toLowerCase().includes('mantenimiento');
 
                   return (
                     <motion.div

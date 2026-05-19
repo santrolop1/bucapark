@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const maintenanceSchema = new mongoose.Schema(
   {
-    incidentId: { type: String, required: true },
+    incidentId: { type: String, default: null },
     parkId: { type: String, required: true },
     descripcion: { type: String, required: true, trim: true },
     operarioId: { type: String, required: true },

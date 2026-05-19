@@ -143,7 +143,7 @@ const mapPark = (park, index) => ({
   nombre: park.nombre || 'Parque',
   direccion: park.direccion || 'Bucaramanga',
   ciudad: park.ciudad || '',
-  estado: (park.estado || 'activo').toLowerCase(),
+  estado: (park.estado || 'activo').toLowerCase().includes('mantenimiento') ? 'mantenimiento' : 'activo',
   capacidad: park.capacidad || 100,
   imagen: PARK_COLORS[index % PARK_COLORS.length],
 });
@@ -370,7 +370,7 @@ const DashboardPage = () => {
   const computedStats = STATS_CONFIG.map((cfg) => ({
     ...cfg,
     value: cfg.key === 'parques'
-      ? parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length
+      ? parks.filter((p) => !(p.estado || '').toLowerCase().includes('mantenimiento')).length
       : cfg.key === 'eventos'
       ? uniqueEventCount
       : cfg.key === 'reservas'
@@ -551,7 +551,7 @@ const DashboardPage = () => {
                   <>
                     Hay{' '}
                     <span className="font-bold text-[#1a332a]">
-                      {parks.filter((p) => (p.estado || '').toLowerCase() === 'activo').length} parques abiertos
+                      {parks.filter((p) => !(p.estado || '').toLowerCase().includes('mantenimiento')).length} parques abiertos
                     </span>
                     <span className="text-[#7a8a7f]"> de {parks.length}</span>
                     {events.length > 0 && (
